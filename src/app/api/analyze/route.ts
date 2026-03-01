@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
 export async function POST(request: NextRequest) {
   try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey || apiKey === "placeholder") {
+      return NextResponse.json(
+        { error: "ANTHROPIC_API_KEYが設定されていません。Vercelの環境変数を確認してください。" },
+        { status: 500 }
+      );
+    }
+
+    const anthropic = new Anthropic({ apiKey });
+
     const { image, media_type } = await request.json();
 
     if (!image || !media_type) {
@@ -83,9 +89,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Analyze error:", error);
-    return NextResponse.json(
-      { error: "画像の解析中にエラーが発生しました" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error && error.message.includes("401")
+        ? "APIキーが無効です。ANTHROPIC_API_KEYを確認してください。"
+        : "画像の解析中にエラーが発生しました";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
