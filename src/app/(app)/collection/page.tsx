@@ -1,0 +1,323 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
+import { Search, Filter, Camera, Loader2 } from "lucide-react";
+import Image from "next/image";
+
+interface TastingRecord {
+  id: string;
+  name: string;
+  distillery: string | null;
+  region: string | null;
+  type: string | null;
+  rating: number;
+  photo_url: string | null;
+  flavor_tags: string[];
+  created_at: string;
+}
+
+export default function CollectionPage() {
+  const [records, setRecords] = useState<TastingRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [search, setSearch] = useState("");
+  const [regionFilter, setRegionFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [minRating, setMinRating] = useState("");
+  const [sort, setSort] = useState("created_at");
+  const [showFilters, setShowFilters] = useState(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  const fetchRecords = useCallback(
+    async (pageNum: number, append = false) => {
+      if (pageNum === 1) setLoading(true);
+      else setLoadingMore(true);
+
+      try {
+        const params = new URLSearchParams({
+          page: pageNum.toString(),
+          limit: "20",
+          sort,
+          order: sort === "rating" ? "desc" : sort === "name" ? "asc" : "desc",
+        });
+
+        if (search) params.set("search", search);
+        if (regionFilter) params.set("region", regionFilter);
+        if (typeFilter) params.set("type", typeFilter);
+        if (minRating) params.set("minRating", minRating);
+
+        const response = await fetch(`/api/records?${params}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          if (append) {
+            setRecords((prev) => [...prev, ...data.records]);
+          } else {
+            setRecords(data.records);
+          }
+          setHasMore(data.records.length === 20);
+        }
+      } catch (err) {
+        console.error("Fetch records error:", err);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [search, regionFilter, typeFilter, minRating, sort]
+  );
+
+  useEffect(() => {
+    setPage(1);
+    fetchRecords(1);
+  }, [fetchRecords]);
+
+  // Infinite scroll
+  useEffect(() => {
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchRecords(nextPage, true);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (loadMoreRef.current) {
+      observerRef.current.observe(loadMoreRef.current);
+    }
+
+    return () => observerRef.current?.disconnect();
+  }, [hasMore, loadingMore, page, fetchRecords]);
+
+  const regions = [
+    "スペイサイド",
+    "アイラ",
+    "ハイランド",
+    "ローランド",
+    "キャンベルタウン",
+    "日本",
+    "ケンタッキー",
+    "テネシー",
+    "アイルランド",
+    "カナダ",
+    "台湾",
+    "インド",
+  ];
+
+  const types = [
+    "シングルモルト",
+    "ブレンデッド",
+    "バーボン",
+    "ライ",
+    "ジャパニーズ",
+    "アイリッシュ",
+    "カナディアン",
+  ];
+
+  return (
+    <div className="py-4 space-y-4">
+      <h1 className="text-xl font-bold text-whiskey-text">コレクション</h1>
+
+      {/* Search */}
+      <div className="flex gap-2">
+        <div className="flex-1 relative">
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-whiskey-muted"
+          />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="名前・蒸留所で検索"
+            className="w-full bg-whiskey-card border border-whiskey-border rounded-lg pl-9 pr-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+          />
+        </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`px-3 rounded-lg border transition-colors ${
+            showFilters
+              ? "bg-whiskey-gold/10 border-whiskey-gold text-whiskey-gold"
+              : "bg-whiskey-card border-whiskey-border text-whiskey-muted hover:text-whiskey-gold"
+          }`}
+          aria-label="フィルター"
+        >
+          <Filter size={18} />
+        </button>
+      </div>
+
+      {/* Filters */}
+      {showFilters && (
+        <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-3 space-y-3">
+          <div>
+            <label className="block text-xs text-whiskey-muted mb-1">
+              産地
+            </label>
+            <select
+              value={regionFilter}
+              onChange={(e) => setRegionFilter(e.target.value)}
+              className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-sm text-whiskey-text focus:outline-none focus:border-whiskey-gold"
+            >
+              <option value="">すべて</option>
+              {regions.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-whiskey-muted mb-1">
+              タイプ
+            </label>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-sm text-whiskey-text focus:outline-none focus:border-whiskey-gold"
+            >
+              <option value="">すべて</option>
+              {types.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-whiskey-muted mb-1">
+              最低評価
+            </label>
+            <select
+              value={minRating}
+              onChange={(e) => setMinRating(e.target.value)}
+              className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-sm text-whiskey-text focus:outline-none focus:border-whiskey-gold"
+            >
+              <option value="">すべて</option>
+              <option value="8">8以上</option>
+              <option value="6">6以上</option>
+              <option value="4">4以上</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-whiskey-muted mb-1">
+              並び替え
+            </label>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-sm text-whiskey-text focus:outline-none focus:border-whiskey-gold"
+            >
+              <option value="created_at">日付順</option>
+              <option value="rating">評価順</option>
+              <option value="name">名前順</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Skeleton */}
+      {loading && (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-whiskey-card border border-whiskey-border rounded-lg p-3 animate-pulse"
+            >
+              <div className="flex gap-3">
+                <div className="w-16 h-16 rounded-lg bg-whiskey-border" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-whiskey-border rounded w-3/4" />
+                  <div className="h-3 bg-whiskey-border rounded w-1/2" />
+                  <div className="h-3 bg-whiskey-border rounded w-1/4" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && records.length === 0 && (
+        <div className="flex flex-col items-center gap-4 py-12">
+          <div className="w-20 h-20 rounded-full bg-whiskey-card border border-whiskey-border flex items-center justify-center">
+            <Camera size={32} className="text-whiskey-muted" />
+          </div>
+          <p className="text-whiskey-muted text-center text-sm">
+            まだ記録がありません
+          </p>
+          <Link
+            href="/record"
+            className="bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
+          >
+            最初の一杯を記録する
+          </Link>
+        </div>
+      )}
+
+      {/* Records List */}
+      {!loading && records.length > 0 && (
+        <div className="space-y-3">
+          {records.map((record) => (
+            <Link
+              key={record.id}
+              href={`/collection/${record.id}`}
+              className="block bg-whiskey-card border border-whiskey-border rounded-lg p-3 hover:border-whiskey-gold/30 transition-colors"
+            >
+              <div className="flex gap-3">
+                {record.photo_url ? (
+                  <Image
+                    src={record.photo_url}
+                    alt={record.name}
+                    width={64}
+                    height={64}
+                    className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-whiskey-border flex-shrink-0 flex items-center justify-center text-whiskey-muted text-xs">
+                    No Photo
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-bold text-whiskey-text truncate">
+                    {record.name}
+                  </h3>
+                  <p className="text-xs text-whiskey-muted truncate">
+                    {[record.region, record.type]
+                      .filter(Boolean)
+                      .join(" / ")}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-whiskey-gold font-bold text-sm">
+                      {record.rating}/10
+                    </span>
+                    <span className="text-whiskey-muted text-xs">
+                      {new Date(record.created_at).toLocaleDateString("ja-JP")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+
+          {/* Load More Trigger */}
+          {hasMore && (
+            <div ref={loadMoreRef} className="py-4 flex justify-center">
+              {loadingMore && (
+                <Loader2 size={24} className="animate-spin text-whiskey-gold" />
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

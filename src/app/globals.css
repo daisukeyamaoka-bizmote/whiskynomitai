@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-whiskey-bg: #0f0d0a;
+  --color-whiskey-card: #1e1a14;
+  --color-whiskey-border: #2a2318;
+  --color-whiskey-text: #e8dcc8;
+  --color-whiskey-muted: #6b5d4d;
+  --color-whiskey-gold: #D4A855;
+  --color-whiskey-gold-dark: #b8923d;
+  --font-serif: "Crimson Pro", serif;
+  --font-sans: "Noto Sans JP", sans-serif;
+}
+
+body {
+  background: var(--color-whiskey-bg);
+  color: var(--color-whiskey-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-whiskey-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-whiskey-border);
+  border-radius: 2px;
+}
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
