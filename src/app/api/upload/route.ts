@@ -42,8 +42,14 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
+      let errorMsg = "アップロードに失敗しました";
+      if (uploadError.message?.includes("not found") || uploadError.message?.includes("Bucket")) {
+        errorMsg = "ストレージバケット「whiskey-photos」が存在しません。Supabaseで作成してください。";
+      } else if (uploadError.message) {
+        errorMsg += `: ${uploadError.message}`;
+      }
       return NextResponse.json(
-        { error: "アップロードに失敗しました" },
+        { error: errorMsg },
         { status: 500 }
       );
     }

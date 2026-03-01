@@ -107,8 +107,16 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("Record insert error:", error);
+      let errorMsg = "記録の保存に失敗しました";
+      if (error.code === "42P01") {
+        errorMsg = "テーブル「tasting_records」が存在しません。Supabaseでテーブルを作成してください。";
+      } else if (error.code === "42501") {
+        errorMsg = "テーブルへのアクセス権がありません。SupabaseのRLSポリシーを確認してください。";
+      } else if (error.message) {
+        errorMsg += `: ${error.message}`;
+      }
       return NextResponse.json(
-        { error: "記録の保存に失敗しました" },
+        { error: errorMsg },
         { status: 500 }
       );
     }

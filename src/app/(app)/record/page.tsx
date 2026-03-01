@@ -102,10 +102,15 @@ export default function RecordPage() {
           body: formData,
         });
 
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          photoUrl = uploadData.url;
+        if (!uploadRes.ok) {
+          const uploadData = await uploadRes.json().catch(() => ({}));
+          setError(uploadData.error || "画像のアップロードに失敗しました");
+          setStep("review");
+          return;
         }
+
+        const uploadData = await uploadRes.json();
+        photoUrl = uploadData.url;
       }
 
       // Save record
