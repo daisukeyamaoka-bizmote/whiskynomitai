@@ -89,10 +89,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Analyze error:", error);
-    const message =
-      error instanceof Error && error.message.includes("401")
-        ? "APIキーが無効です。ANTHROPIC_API_KEYを確認してください。"
-        : "画像の解析中にエラーが発生しました";
-    return NextResponse.json({ error: message }, { status: 500 });
+
+    let message = "画像の解析中にエラーが発生しました";
+    const errorStr = error instanceof Error ? error.message : String(error);
+
+    if (errorStr.includes("401")) {
+      message = "APIキーが無効です。ANTHROPIC_API_KEYを確認してください。";
+    } else if (errorStr.includes("403")) {
+      message = "APIキーにこのモデルへのアクセス権がありません。Anthropic Consoleでプランを確認してください。";
+    } else if (errorStr.includes("429")) {
+      message = "APIのレート制限に達しました。しばらく待ってから再試行してください。";
+    } else if (errorStr.includes("insufficient") || errorStr.includes("billing") || errorStr.includes("credit")) {
+      message = "APIクレジットが不足しています。Anthropic Consoleで残高を確認してください。";
+    } else if (errorStr.includes("model")) {
+      message = "指定されたモデルが利用できません: " + errorStr;
+    }
+
+    return NextResponse.json(
+      { error: message, detail: errorStr },
+      { status: 500 }
+    );
   }
 }
