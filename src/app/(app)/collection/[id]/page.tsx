@@ -12,9 +12,30 @@ import {
   MapPin,
   Calendar,
   Banknote,
+  Search,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  UtensilsCrossed,
+  Landmark,
+  FlaskConical,
+  Wine,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+
+interface FoodPairing {
+  name: string;
+  reason: string;
+}
+
+interface ResearchData {
+  distillery_history: string;
+  distillery_features: string;
+  production_method: string;
+  tasting_profile: string;
+  food_pairings: FoodPairing[];
+}
 
 interface TastingRecord {
   id: string;
@@ -32,6 +53,7 @@ interface TastingRecord {
   drinking_location: string | null;
   price: number | null;
   created_at: string;
+  research_data: ResearchData | null;
 }
 
 export default function RecordDetailPage({
@@ -47,6 +69,8 @@ export default function RecordDetailPage({
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState("");
+  const [researching, setResearching] = useState(false);
+  const [researchOpen, setResearchOpen] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -118,6 +142,40 @@ export default function RecordDetailPage({
       }
     } catch {
       setError("削除中にエラーが発生しました");
+    }
+  };
+
+  const handleResearch = async () => {
+    if (!record || researching) return;
+    setResearching(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          record_id: record.id,
+          name: record.name,
+          distillery: record.distillery,
+          region: record.region,
+          type: record.type,
+          age: record.age,
+          abv: record.abv,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRecord({ ...record, research_data: data });
+      } else {
+        const err = await response.json();
+        setError(err.error || "調査に失敗しました");
+      }
+    } catch {
+      setError("調査中にエラーが発生しました");
+    } finally {
+      setResearching(false);
     }
   };
 
@@ -227,6 +285,148 @@ export default function RecordDetailPage({
           </p>
         )}
       </div>
+
+      {/* AI Research Section */}
+      {record.research_data ? (
+        <div className="bg-whiskey-card border border-whiskey-border rounded-lg overflow-hidden">
+          <button
+            onClick={() => setResearchOpen(!researchOpen)}
+            className="w-full flex items-center justify-between p-4 text-left"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-whiskey-gold" />
+              <span className="text-sm font-bold text-whiskey-gold">
+                AI調査レポート
+              </span>
+            </div>
+            {researchOpen ? (
+              <ChevronUp size={16} className="text-whiskey-muted" />
+            ) : (
+              <ChevronDown size={16} className="text-whiskey-muted" />
+            )}
+          </button>
+
+          {researchOpen && (
+            <div className="px-4 pb-4 space-y-4">
+              {/* Distillery History */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Landmark size={14} className="text-whiskey-gold/70" />
+                  <h3 className="text-xs font-bold text-whiskey-gold/70 uppercase tracking-wider">
+                    蒸留所の歴史
+                  </h3>
+                </div>
+                <p className="text-whiskey-text text-sm leading-relaxed">
+                  {record.research_data.distillery_history}
+                </p>
+              </div>
+
+              {/* Distillery Features */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-whiskey-gold/70" />
+                  <h3 className="text-xs font-bold text-whiskey-gold/70 uppercase tracking-wider">
+                    蒸留所の特徴
+                  </h3>
+                </div>
+                <p className="text-whiskey-text text-sm leading-relaxed">
+                  {record.research_data.distillery_features}
+                </p>
+              </div>
+
+              {/* Production Method */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <FlaskConical size={14} className="text-whiskey-gold/70" />
+                  <h3 className="text-xs font-bold text-whiskey-gold/70 uppercase tracking-wider">
+                    製造方法
+                  </h3>
+                </div>
+                <p className="text-whiskey-text text-sm leading-relaxed">
+                  {record.research_data.production_method}
+                </p>
+              </div>
+
+              {/* Tasting Profile */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <Wine size={14} className="text-whiskey-gold/70" />
+                  <h3 className="text-xs font-bold text-whiskey-gold/70 uppercase tracking-wider">
+                    味わいのプロフィール
+                  </h3>
+                </div>
+                <p className="text-whiskey-text text-sm leading-relaxed">
+                  {record.research_data.tasting_profile}
+                </p>
+              </div>
+
+              {/* Food Pairings */}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <UtensilsCrossed size={14} className="text-whiskey-gold/70" />
+                  <h3 className="text-xs font-bold text-whiskey-gold/70 uppercase tracking-wider">
+                    おすすめのつまみ
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  {record.research_data.food_pairings.map((pairing, i) => (
+                    <div
+                      key={i}
+                      className="bg-whiskey-bg/50 rounded-lg px-3 py-2"
+                    >
+                      <span className="text-whiskey-text text-sm font-medium">
+                        {pairing.name}
+                      </span>
+                      <p className="text-whiskey-muted text-xs mt-0.5">
+                        {pairing.reason}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Re-research button */}
+              <button
+                onClick={handleResearch}
+                disabled={researching}
+                className="w-full text-xs text-whiskey-muted hover:text-whiskey-gold transition-colors py-1 flex items-center justify-center gap-1"
+              >
+                {researching ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <Search size={12} />
+                )}
+                再調査する
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <button
+          onClick={handleResearch}
+          disabled={researching}
+          className="w-full bg-gradient-to-r from-whiskey-gold/20 to-whiskey-gold/10 border border-whiskey-gold/30 rounded-lg p-4 flex items-center justify-center gap-2 hover:from-whiskey-gold/30 hover:to-whiskey-gold/20 transition-all disabled:opacity-50"
+        >
+          {researching ? (
+            <>
+              <Loader2 size={18} className="animate-spin text-whiskey-gold" />
+              <span className="text-whiskey-gold text-sm font-medium">
+                AIが調査中...
+              </span>
+            </>
+          ) : (
+            <>
+              <Sparkles size={18} className="text-whiskey-gold" />
+              <span className="text-whiskey-gold text-sm font-medium">
+                AIで詳しく調べる
+              </span>
+              <span className="text-whiskey-muted text-xs ml-1">
+                蒸留所の歴史・製法・合うつまみ
+              </span>
+            </>
+          )}
+        </button>
+      )}
 
       {/* Rating */}
       <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4">
