@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import AmbientBackground from "@/components/AmbientBackground";
+import SommelierFab from "@/components/SommelierFab";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,6 +11,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <main className="max-w-[480px] mx-auto px-4 pt-16 pb-20 relative z-10">
         {children}
       </main>
+      <SommelierFab />
       <BottomNav />
     </div>
   );
