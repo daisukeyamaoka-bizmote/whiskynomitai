@@ -202,80 +202,47 @@ export default function MyPage() {
   }, []);
 
   const fetchAll = async () => {
-    // Phase 1: Profile + follow counts (fastest, needed for above-the-fold)
-    const profilePromise = fetch("/api/profile").catch(() => null);
-    const authPromise = supabase.auth.getUser();
+    try {
+      const res = await fetch("/api/mypage");
+      if (!res.ok) return;
+      const data = await res.json();
 
-    const [profileRes, { data: { user: authUser } }] = await Promise.all([profilePromise, authPromise]);
+      setProfile(data.profile);
+      setEditForm(data.profile);
+      setFollowingCount(data.followingCount);
+      setFollowerCount(data.followerCount);
+      setRecentRecords(data.recentRecords || []);
+      setPreferences(data.preferences);
 
-    if (profileRes?.ok) {
-      const p = await profileRes.json();
-      setProfile(p);
-      setEditForm(p);
-    }
+      if (data.dashboard) {
+        setDashboard(data.dashboard);
+        const flavors = new Set(data.dashboard.topFlavors.map((f: FlavorStat) => f.name));
+        setStats({
+          total: data.dashboard.total,
+          avgRating: data.dashboard.avgRating,
+          uniqueRegions: data.dashboard.regionBreakdown.length,
+          uniqueTypes: data.dashboard.typeBreakdown.length,
+          uniqueFlavors: flavors.size,
+          highRatedCount: Object.entries(data.dashboard.ratingDistribution)
+            .filter(([k]) => Number(k) >= 8)
+            .reduce((sum, [, v]) => sum + Number(v), 0),
+          shareCount: data.shareCount || 0,
+        });
 
-    // Start follow counts immediately (parallel with rest)
-    if (authUser) {
-      Promise.all([
-        supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("follower_id", authUser.id),
-        supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("following_id", authUser.id),
-      ]).then(([followingRes, followerRes]) => {
-        setFollowingCount(followingRes.count || 0);
-        setFollowerCount(followerRes.count || 0);
-      }).catch(() => {});
-    }
-
-    // Show profile card immediately
-    setLoading(false);
-
-    // Phase 2: Dashboard + records + preferences (non-blocking)
-    const [dashboardRes, recordsRes, prefsRes, sharesRes] = await Promise.all([
-      fetch("/api/dashboard").catch(() => null),
-      fetch("/api/records?limit=3&page=1").catch(() => null),
-      fetch("/api/preferences").catch(() => null),
-      fetch("/api/shares").catch(() => null),
-    ]);
-
-    if (dashboardRes?.ok) {
-      const d: DashboardData = await dashboardRes.json();
-      setDashboard(d);
-      const flavors = new Set(d.topFlavors.map((f) => f.name));
-      const newStats: Stats = {
-        total: d.total,
-        avgRating: d.avgRating,
-        uniqueRegions: d.regionBreakdown.length,
-        uniqueTypes: d.typeBreakdown.length,
-        uniqueFlavors: flavors.size,
-        highRatedCount: Object.entries(d.ratingDistribution)
-          .filter(([k]) => Number(k) >= 8)
-          .reduce((sum, [, v]) => sum + Number(v), 0),
-        shareCount: 0,
-      };
-      setStats(newStats);
-
-      // Phase 3: Lazy-load AI analysis (only if enough data, non-blocking)
-      if (d.total >= 2) {
-        fetch("/api/dashboard/ai").then(async (res) => {
-          if (res.ok) {
-            const ai = await res.json();
-            setDashboard((prev) => prev ? { ...prev, aiAnalysis: ai } : prev);
-          }
-        }).catch(() => {});
+        // Lazy-load AI analysis (non-blocking, after page renders)
+        if (data.dashboard.total >= 2) {
+          fetch("/api/dashboard/ai").then(async (r) => {
+            if (r.ok) {
+              const ai = await r.json();
+              setDashboard((prev) => prev ? { ...prev, aiAnalysis: ai } : prev);
+            }
+          }).catch(() => {});
+        }
       }
-    }
-
-    if (recordsRes?.ok) {
-      const rd = await recordsRes.json();
-      setRecentRecords(rd.records || []);
-    }
-
-    if (prefsRes?.ok) {
-      setPreferences(await prefsRes.json());
-    }
-
-    if (sharesRes?.ok) {
-      const sd = await sharesRes.json();
-      setStats((prev) => ({ ...prev, shareCount: sd.count || 0 }));
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
     }
   };
 
