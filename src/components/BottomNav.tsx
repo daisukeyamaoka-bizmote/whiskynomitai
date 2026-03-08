@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Camera, LayoutGrid, Newspaper, Bell } from "lucide-react";
+import { User, Camera, LayoutGrid, Newspaper, Bell, Wine } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { href: "/notifications", label: "通知", icon: Bell },
   { href: "/collection", label: "コレクション", icon: LayoutGrid },
   { href: "/mypage", label: "マイページ", icon: User },
+  { href: "/sommelier", label: "ソムリエ", icon: Wine },
 ];
 
 export default function BottomNav() {
