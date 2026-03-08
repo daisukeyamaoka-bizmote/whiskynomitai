@@ -11,6 +11,9 @@ import {
   Wine,
   Users,
   MessageCircle,
+  Heart,
+  MapPin,
+  Star,
   Bookmark,
   GlassWater,
   ArrowLeft,
@@ -54,6 +57,13 @@ interface Comment {
   is_own: boolean;
 }
 
+interface TasteProfile {
+  top_flavors: string[];
+  top_regions: string[];
+  top_types: string[];
+  avg_rating: number | null;
+}
+
 interface UserProfile {
   id: string;
   display_name: string;
@@ -62,6 +72,8 @@ interface UserProfile {
   following_count: number;
   follower_count: number;
   record_count: number;
+  taste_profile: TasteProfile;
+  compatibility: number | null;
   posts: TimelinePost[];
 }
 
@@ -462,6 +474,120 @@ export default function UserProfilePage() {
           </button>
         </div>
       </div>
+
+      {/* Taste Profile & Compatibility */}
+      {(profile.taste_profile.top_flavors.length > 0 ||
+        profile.taste_profile.top_regions.length > 0 ||
+        profile.taste_profile.top_types.length > 0) && (
+        <div className="glass-card p-4 space-y-4">
+          {/* Compatibility Badge */}
+          {profile.compatibility != null && (
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 ${
+                profile.compatibility >= 70
+                  ? "border-green-400/50 bg-green-400/10"
+                  : profile.compatibility >= 40
+                    ? "border-whiskey-gold/50 bg-whiskey-gold/10"
+                    : "border-whiskey-border/50 bg-whiskey-border/10"
+              }`}>
+                <Heart
+                  size={18}
+                  className={
+                    profile.compatibility >= 70
+                      ? "text-green-400"
+                      : profile.compatibility >= 40
+                        ? "text-whiskey-gold"
+                        : "text-whiskey-muted"
+                  }
+                  fill={profile.compatibility >= 40 ? "currentColor" : "none"}
+                />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-whiskey-text">
+                  テイスト相性{" "}
+                  <span className={
+                    profile.compatibility >= 70
+                      ? "text-green-400"
+                      : profile.compatibility >= 40
+                        ? "text-whiskey-gold"
+                        : "text-whiskey-muted"
+                  }>
+                    {profile.compatibility}%
+                  </span>
+                </p>
+                <p className="text-[10px] text-whiskey-muted">
+                  {profile.compatibility >= 70
+                    ? "好みがとても近いです！"
+                    : profile.compatibility >= 40
+                      ? "共通の好みがあります"
+                      : "新しい発見があるかも"}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Top Flavors */}
+          {profile.taste_profile.top_flavors.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-2">
+                <Star size={13} className="text-whiskey-gold" />
+                <p className="text-xs font-bold text-whiskey-muted">好みのフレーバー</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {profile.taste_profile.top_flavors.map((f) => (
+                  <span key={f} className="glass-tag px-2.5 py-1 text-xs text-whiskey-gold">
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Types */}
+          {profile.taste_profile.top_types.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-2">
+                <Wine size={13} className="text-whiskey-gold" />
+                <p className="text-xs font-bold text-whiskey-muted">好みのタイプ</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {profile.taste_profile.top_types.map((t) => (
+                  <span key={t} className="glass-tag px-2.5 py-1 text-xs text-whiskey-text">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Top Regions */}
+          {profile.taste_profile.top_regions.length > 0 && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-2">
+                <MapPin size={13} className="text-whiskey-gold" />
+                <p className="text-xs font-bold text-whiskey-muted">好みの産地</p>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {profile.taste_profile.top_regions.map((r) => (
+                  <span key={r} className="glass-tag px-2.5 py-1 text-xs text-whiskey-text">
+                    {r}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Avg Rating */}
+          {profile.taste_profile.avg_rating != null && (
+            <div className="flex items-center gap-2 pt-1 border-t border-whiskey-border/30">
+              <GlassWater size={13} className="text-whiskey-gold" />
+              <p className="text-xs text-whiskey-muted">
+                平均評価: <span className="text-whiskey-gold font-bold">{profile.taste_profile.avg_rating}</span>/10
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* User's Posts */}
       <div className="space-y-3">
