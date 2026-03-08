@@ -97,7 +97,8 @@ export async function GET(request: NextRequest) {
     const userIds = [...new Set((posts || []).map((p) => p.user_id))];
 
     // Batch all secondary queries in parallel (single query each, no N+1)
-    const [likesResult, followResult, bookmarkResult, profilesResult, recordCountsResult] = await Promise.all([
+    // Record counts use per-user RPC calls but only for unique users (typically <10)
+    const [likesResult, followResult, bookmarkResult, profilesResult, ...recordCountResults] = await Promise.all([
       postIds.length > 0
         ? supabase
             .from("timeline_likes")
@@ -125,12 +126,10 @@ export async function GET(request: NextRequest) {
             .select("id, display_name, user_handle, avatar_url")
             .in("id", userIds)
         : Promise.resolve({ data: [] }),
-      userIds.length > 0
-        ? supabase
-            .from("tasting_records")
-            .select("user_id")
-            .in("user_id", userIds)
-        : Promise.resolve({ data: [] }),
+      // Fetch record counts per unique user via RPC (runs in parallel with above)
+      ...userIds.map((uid) =>
+        supabase.rpc("get_user_record_count", { p_user_id: uid })
+      ),
     ]);
 
     const likedPostIds = new Set((likesResult.data || []).map((l: { post_id: string }) => l.post_id));
@@ -143,11 +142,11 @@ export async function GET(request: NextRequest) {
       profileMap.set(p.id, p);
     }
 
-    // Count records per user from batch result
+    // Build record count map from parallel RPC results
     const recordCountMap = new Map<string, number>();
-    for (const r of (recordCountsResult.data || []) as { user_id: string }[]) {
-      recordCountMap.set(r.user_id, (recordCountMap.get(r.user_id) || 0) + 1);
-    }
+    userIds.forEach((uid, i) => {
+      recordCountMap.set(uid, (recordCountResults[i] as { data: number | null }).data || 0);
+    });
 
     const enrichedPosts = (posts || []).map((post) => {
       const profile = profileMap.get(post.user_id);

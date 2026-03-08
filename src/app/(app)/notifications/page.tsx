@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -13,7 +13,6 @@ import {
   Send,
   X,
 } from "lucide-react";
-import WhiskyLoader from "@/components/WhiskyLoader";
 
 interface Notification {
   id: string;
@@ -45,17 +44,36 @@ export default function NotificationsPage() {
   const [commentText, setCommentText] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const lastFetchRef = useRef<number>(0);
 
   useEffect(() => {
     fetchNotifications();
   }, []);
 
-  const fetchNotifications = async () => {
+  // Refresh on visibility change with 30s cooldown
+  useEffect(() => {
+    const handler = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastFetchRef.current > 30000) {
+        fetchNotifications(true);
+      }
+    };
+    document.addEventListener("visibilitychange", handler);
+    return () => document.removeEventListener("visibilitychange", handler);
+  }, []);
+
+  const fetchNotifications = async (background = false) => {
+    // If we already have data, refresh in background (no skeleton)
+    if (background && notifications.length > 0) {
+      // silent refresh
+    } else if (notifications.length === 0) {
+      setLoading(true);
+    }
     try {
       const res = await fetch("/api/notifications");
       if (res.ok) {
         const data = await res.json();
         setNotifications(data.notifications || []);
+        lastFetchRef.current = Date.now();
       }
     } catch {
       // ignore

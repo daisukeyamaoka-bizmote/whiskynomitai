@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import WhiskyLoader from "@/components/WhiskyLoader";
 
 interface TastingRecord {
   id: string;
@@ -87,18 +86,30 @@ export default function TimelinePage() {
   const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const mentionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchRef = useRef<number>(0);
+  const postsCache = useRef<Map<Tab, TimelinePost[]>>(new Map());
 
   const fetchPosts = useCallback(
     async (p: number, reset = false) => {
-      if (reset) setLoading(true);
-      else setLoadingMore(true);
+      // Show cached data instantly on tab switch instead of skeleton
+      if (reset && postsCache.current.has(tab)) {
+        setPosts(postsCache.current.get(tab)!);
+        setLoading(false);
+      } else if (reset) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
 
       try {
         const res = await fetch(`/api/timeline?tab=${tab}&page=${p}`);
         if (res.ok) {
           const data = await res.json();
-          setPosts((prev) => (reset ? data.posts : [...prev, ...data.posts]));
+          const newPosts = reset ? data.posts : [...posts, ...data.posts];
+          setPosts(newPosts);
+          if (reset) postsCache.current.set(tab, data.posts);
           setHasMore(data.hasMore);
+          lastFetchRef.current = Date.now();
         }
       } catch {
         // ignore
@@ -107,18 +118,18 @@ export default function TimelinePage() {
         setLoadingMore(false);
       }
     },
-    [tab]
+    [tab, posts]
   );
 
   useEffect(() => {
     setPage(1);
-    setPosts([]);
     fetchPosts(1, true);
-  }, [tab, fetchPosts]);
+  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
+      // Only refetch if >30s since last fetch (cooldown)
+      if (document.visibilityState === "visible" && Date.now() - lastFetchRef.current > 30000) {
         setPage(1);
         fetchPosts(1, true);
       }

@@ -10,11 +10,13 @@ export async function GET() {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
-    // First, get my post IDs (single query, reused below)
+    // Get my recent post IDs (limited to 200 most recent for performance)
     const { data: myPosts } = await supabase
       .from("timeline_posts")
       .select("id")
-      .eq("user_id", user.id);
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(200);
     const myPostIds = (myPosts || []).map((p) => p.id);
 
     // Fetch all notification sources in parallel
