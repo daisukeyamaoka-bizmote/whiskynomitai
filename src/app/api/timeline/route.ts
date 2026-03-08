@@ -71,7 +71,8 @@ export async function GET(request: NextRequest) {
       const { data: follows } = await supabase
         .from("user_follows")
         .select("following_id")
-        .eq("follower_id", user.id);
+        .eq("follower_id", user.id)
+        .limit(500);
 
       const followingIds = follows?.map((f) => f.following_id) || [];
 

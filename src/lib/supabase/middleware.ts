@@ -10,6 +10,19 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  const pathname = request.nextUrl.pathname;
+
+  // Fast path: API routes handle their own auth - skip middleware entirely
+  if (pathname.startsWith("/api/")) {
+    return supabaseResponse;
+  }
+
+  const publicPaths = ["/login", "/signup", "/auth/callback", "/share"];
+  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
+
+  // Check onboarding cookie BEFORE creating Supabase client (zero-cost)
+  const onboardingDone = request.cookies.get("onboarding_done")?.value === "1";
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -33,15 +46,10 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // getSession() is fast (local JWT check), getUser() hits Supabase API every time
+  // getSession() is fast (local JWT check)
   const {
     data: { session },
   } = await supabase.auth.getSession();
-
-  const publicPaths = ["/login", "/signup", "/auth/callback", "/share", "/api/og"];
-  const isPublicPath = publicPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
 
   if (!session && !isPublicPath) {
     const url = request.nextUrl.clone();
@@ -49,43 +57,42 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Redirect to onboarding if not completed (skip for API routes and onboarding itself)
-  const isOnboarding = request.nextUrl.pathname.startsWith("/onboarding");
-  const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
+  // Fast return: onboarding already done (cookie cached) - no DB query needed
+  if (!session || isPublicPath || onboardingDone) {
+    return supabaseResponse;
+  }
 
-  if (session && !isPublicPath && !isOnboarding && !isApiRoute) {
-    // Check cookie cache first to avoid DB query on every request
-    const onboardingDone = request.cookies.get("onboarding_done")?.value;
+  // Only check onboarding for non-onboarding page routes (not API, not already onboarding)
+  const isOnboarding = pathname.startsWith("/onboarding");
+  if (isOnboarding) {
+    return supabaseResponse;
+  }
 
-    if (onboardingDone === "1") {
-      return supabaseResponse;
+  // DB query only happens once per user (until cookie is set)
+  try {
+    const { data: prefs, error } = await supabase
+      .from("user_preferences")
+      .select("onboarding_completed")
+      .eq("user_id", session.user.id)
+      .single();
+
+    if (!error && prefs && prefs.onboarding_completed === false) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/onboarding";
+      return NextResponse.redirect(url);
     }
 
-    try {
-      const { data: prefs, error } = await supabase
-        .from("user_preferences")
-        .select("onboarding_completed")
-        .eq("user_id", session.user.id)
-        .single();
-
-      if (!error && prefs && prefs.onboarding_completed === false) {
-        const url = request.nextUrl.clone();
-        url.pathname = "/onboarding";
-        return NextResponse.redirect(url);
-      }
-
-      if (!error && prefs && prefs.onboarding_completed === true) {
-        supabaseResponse.cookies.set("onboarding_done", "1", {
-          httpOnly: true,
-          secure: true,
-          sameSite: "lax",
-          maxAge: 60 * 60 * 24 * 30,
-          path: "/",
-        });
-      }
-    } catch {
-      // If preferences table doesn't exist yet or other error, skip check
+    if (!error && prefs && prefs.onboarding_completed === true) {
+      supabaseResponse.cookies.set("onboarding_done", "1", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 30,
+        path: "/",
+      });
     }
+  } catch {
+    // If preferences table doesn't exist yet or other error, skip check
   }
 
   return supabaseResponse;
