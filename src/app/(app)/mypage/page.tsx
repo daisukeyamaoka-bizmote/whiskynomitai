@@ -14,7 +14,7 @@ import {
   Trophy,
   Sparkles,
   RefreshCw,
-  Crown,
+
   LogOut,
   Edit3,
   X,
@@ -189,7 +189,6 @@ export default function MyPage() {
   const [suggestData, setSuggestData] = useState<SuggestResponse | null>(null);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestError, setSuggestError] = useState("");
-  const [suggestNeedsUpgrade, setSuggestNeedsUpgrade] = useState(false);
   const [followingCount, setFollowingCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
   const [followListType, setFollowListType] = useState<"following" | "followers" | null>(null);
@@ -285,12 +284,10 @@ export default function MyPage() {
   const fetchSuggestions = async () => {
     setSuggestLoading(true);
     setSuggestError("");
-    setSuggestNeedsUpgrade(false);
     try {
       const response = await fetch("/api/suggest");
       const result = await response.json();
       if (!response.ok) {
-        if (result.upgrade) setSuggestNeedsUpgrade(true);
         setSuggestError(result.error || "");
         return;
       }
@@ -830,12 +827,6 @@ export default function MyPage() {
             {suggestError && !suggestData && (
               <div className="glass-card p-4 text-center space-y-3">
                 <p className="text-whiskey-muted text-sm">{suggestError}</p>
-                {suggestNeedsUpgrade && (
-                  <Link href="/plan" className="inline-flex items-center gap-2 bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-5 py-2 rounded-lg text-xs">
-                    <Crown size={14} />
-                    プレミアムにアップグレード
-                  </Link>
-                )}
               </div>
             )}
             {suggestData && (
@@ -878,16 +869,6 @@ export default function MyPage() {
             )}
           </div>
 
-          {/* Plan Link */}
-          <Link href="/plan" className="block glass-card p-4 active:scale-[0.98]">
-            <div className="flex items-center gap-3">
-              <Crown size={20} className="text-whiskey-gold" />
-              <div>
-                <p className="text-sm font-bold text-whiskey-text">プラン・課金</p>
-                <p className="text-xs text-whiskey-muted">AI機能を無制限に使うなら月500円</p>
-              </div>
-            </div>
-          </Link>
         </div>
       )}
 

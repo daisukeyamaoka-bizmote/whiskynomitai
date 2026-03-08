@@ -14,7 +14,6 @@ import {
   Banknote,
   Search,
   Sparkles,
-  Crown,
   ChevronDown,
   ChevronUp,
   UtensilsCrossed,
@@ -76,7 +75,6 @@ export default function RecordDetailPage({
   const [researching, setResearching] = useState(false);
   const [researchOpen, setResearchOpen] = useState(true);
   const [showShare, setShowShare] = useState(false);
-  const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -176,9 +174,6 @@ export default function RecordDetailPage({
         setRecord({ ...record, research_data: data });
       } else {
         const err = await response.json();
-        if (err.upgrade) {
-          setNeedsUpgrade(true);
-        }
         setError(err.error || "調査に失敗しました");
       }
     } catch {
@@ -614,18 +609,6 @@ export default function RecordDetailPage({
       </div>
 
       {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-
-      {needsUpgrade && (
-        <div className="text-center">
-          <Link
-            href="/plan"
-            className="inline-flex items-center gap-2 glass-button text-whiskey-bg font-bold px-6 py-2.5 text-sm active:scale-90 transition-transform"
-          >
-            <Crown size={16} />
-            プレミアムにアップグレード
-          </Link>
-        </div>
-      )}
 
       {/* Share Modal */}
       {showShare && (

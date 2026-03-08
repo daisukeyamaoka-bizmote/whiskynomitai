@@ -45,7 +45,7 @@ export default function BottomNav() {
             <Link
               key={href}
               href={href}
-              className={`relative flex-1 flex flex-col items-center py-2.5 gap-0.5 transition-colors duration-200 active:scale-90 ${
+              className={`relative flex-1 flex flex-col items-center justify-center py-3 transition-colors duration-200 active:scale-90 ${
                 isActive
                   ? "text-whiskey-gold"
                   : "text-whiskey-muted hover:text-whiskey-text"
@@ -67,9 +67,6 @@ export default function BottomNav() {
               >
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} />
               </div>
-              <span className={`text-[10px] transition-all duration-200 ${isActive ? "font-bold" : ""}`}>
-                {label}
-              </span>
               {isActive && (
                 <div
                   className="absolute bottom-0 w-10 h-[3px] rounded-full transition-all duration-300"

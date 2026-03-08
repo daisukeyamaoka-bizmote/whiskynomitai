@@ -8,7 +8,6 @@ import {
   Edit3,
   Save,
   X,
-  Crown,
   Send,
   SkipForward,
   ImagePlus,
@@ -45,7 +44,6 @@ export default function RecordPage() {
   const [drinkingLocation, setDrinkingLocation] = useState("");
   const [price, setPrice] = useState("");
   const [error, setError] = useState("");
-  const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
   const [shareComment, setShareComment] = useState("");
   const [sharing, setSharing] = useState(false);
@@ -83,9 +81,6 @@ export default function RecordPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.upgrade) {
-          setNeedsUpgrade(true);
-        }
         setError(data.error || "解析に失敗しました");
         setStep("capture");
         return;
@@ -273,15 +268,6 @@ export default function RecordPage() {
           />
           {error && (
             <p className="text-red-400 text-sm text-center">{error}</p>
-          )}
-          {needsUpgrade && (
-            <Link
-              href="/plan"
-              className="inline-flex items-center gap-2 bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
-            >
-              <Crown size={16} />
-              プレミアムにアップグレード
-            </Link>
           )}
         </div>
       )}
@@ -515,17 +501,6 @@ export default function RecordPage() {
 
           {error && (
             <p className="text-red-400 text-sm text-center">{error}</p>
-          )}
-          {needsUpgrade && (
-            <div className="text-center">
-              <Link
-                href="/plan"
-                className="inline-flex items-center gap-2 bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
-              >
-                <Crown size={16} />
-                プレミアムにアップグレード
-              </Link>
-            </div>
           )}
         </div>
       )}

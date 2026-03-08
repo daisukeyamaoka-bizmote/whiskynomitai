@@ -21,8 +21,6 @@ export async function GET() {
       return NextResponse.json(
         {
           error: "今月のAI無料利用回数（3回）を超えました",
-          upgrade: true,
-          usage,
         },
         { status: 403 }
       );

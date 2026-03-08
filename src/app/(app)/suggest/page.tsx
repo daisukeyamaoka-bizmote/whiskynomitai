@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, Loader2, RefreshCw, Crown } from "lucide-react";
+import { Sparkles, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import WhiskyLoader from "@/components/WhiskyLoader";
 
@@ -33,7 +33,6 @@ export default function SuggestPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [totalTastings, setTotalTastings] = useState(0);
-  const [needsUpgrade, setNeedsUpgrade] = useState(false);
 
   useEffect(() => {
     fetchSuggestions();
@@ -50,9 +49,6 @@ export default function SuggestPage() {
       if (!response.ok) {
         if (result.total_tastings !== undefined) {
           setTotalTastings(result.total_tastings);
-        }
-        if (result.upgrade) {
-          setNeedsUpgrade(true);
         }
         setError(result.error);
         return;
@@ -93,17 +89,7 @@ export default function SuggestPage() {
           </div>
           <p className="text-whiskey-muted text-center text-sm">{error}</p>
 
-          {needsUpgrade && (
-            <Link
-              href="/plan"
-              className="inline-flex items-center gap-2 glass-button text-whiskey-bg font-bold px-6 py-2.5 text-sm active:scale-90 transition-transform"
-            >
-              <Crown size={16} />
-              プレミアムにアップグレード
-            </Link>
-          )}
-
-          {!needsUpgrade && totalTastings < 2 && (
+          {totalTastings < 2 && (
             <div className="space-y-3 text-center">
               <div className="flex items-center justify-center gap-2">
                 {[0, 1].map((i) => (
