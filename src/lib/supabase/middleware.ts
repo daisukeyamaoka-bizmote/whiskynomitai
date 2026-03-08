@@ -43,7 +43,6 @@ export async function updateSession(request: NextRequest) {
   );
 
   if (!user && !isPublicPath) {
-    // Allow onboarding page only for authenticated users
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -54,6 +53,14 @@ export async function updateSession(request: NextRequest) {
   const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
 
   if (user && !isPublicPath && !isOnboarding && !isApiRoute) {
+    // Check cookie cache first to avoid DB query on every request
+    const onboardingDone = request.cookies.get("onboarding_done")?.value;
+
+    if (onboardingDone === "1") {
+      // Already completed, skip DB check
+      return supabaseResponse;
+    }
+
     try {
       const { data: prefs, error } = await supabase
         .from("user_preferences")
@@ -61,12 +68,21 @@ export async function updateSession(request: NextRequest) {
         .eq("user_id", user.id)
         .single();
 
-      // Only redirect to onboarding if we got a clear "not completed" result
-      // If there's an error (table missing, no row, etc.), let the user through
       if (!error && prefs && prefs.onboarding_completed === false) {
         const url = request.nextUrl.clone();
         url.pathname = "/onboarding";
         return NextResponse.redirect(url);
+      }
+
+      // Cache the result so we don't query DB on every request
+      if (!error && prefs && prefs.onboarding_completed === true) {
+        supabaseResponse.cookies.set("onboarding_done", "1", {
+          httpOnly: true,
+          secure: true,
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+          path: "/",
+        });
       }
     } catch {
       // If preferences table doesn't exist yet or other error, skip check

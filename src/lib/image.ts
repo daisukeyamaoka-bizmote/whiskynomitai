@@ -1,51 +1,51 @@
 export function resizeImage(file: File, maxWidth = 1200): Promise<{ base64: string; blob: Blob; mediaType: string }> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        let width = img.width;
-        let height = img.height;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
 
-        if (width > maxWidth) {
-          height = (height * maxWidth) / width;
-          width = maxWidth;
-        }
+      const canvas = document.createElement("canvas");
+      let width = img.width;
+      let height = img.height;
 
-        canvas.width = width;
-        canvas.height = height;
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
 
-        const ctx = canvas.getContext("2d")!;
-        ctx.drawImage(img, 0, 0, width, height);
+      canvas.width = width;
+      canvas.height = height;
 
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error("画像の変換に失敗しました"));
-              return;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("画像の変換に失敗しました"));
+            return;
+          }
+
+          // ArrayBuffer -> base64 (FileReader不要)
+          blob.arrayBuffer().then((buffer) => {
+            const bytes = new Uint8Array(buffer);
+            let binary = "";
+            for (let i = 0; i < bytes.length; i++) {
+              binary += String.fromCharCode(bytes[i]);
             }
-
-            const reader2 = new FileReader();
-            reader2.onload = () => {
-              const base64 = (reader2.result as string).split(",")[1];
-              resolve({
-                base64,
-                blob,
-                mediaType: "image/jpeg",
-              });
-            };
-            reader2.onerror = reject;
-            reader2.readAsDataURL(blob);
-          },
-          "image/jpeg",
-          0.85
-        );
-      };
-      img.onerror = reject;
-      img.src = e.target?.result as string;
+            const base64 = btoa(binary);
+            resolve({ base64, blob, mediaType: "image/jpeg" });
+          }).catch(reject);
+        },
+        "image/jpeg",
+        0.85
+      );
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("画像の読み込みに失敗しました"));
+    };
+    img.src = url;
   });
 }
