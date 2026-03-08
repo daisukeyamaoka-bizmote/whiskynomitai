@@ -6,7 +6,7 @@ import { User, Camera, LayoutGrid, Newspaper } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "マイページ", icon: User },
-  { href: "/timeline", label: "ウイ活", icon: Newspaper },
+  { href: "/timeline", label: "みんなのウイ活", icon: Newspaper },
   { href: "/record", label: "記録", icon: Camera },
   { href: "/collection", label: "コレクション", icon: LayoutGrid },
 ];

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Heart,
   MessageCircle,
   Loader2,
   UserPlus,
@@ -11,6 +10,8 @@ import {
   Send,
   X,
   ChevronDown,
+  Bookmark,
+  GlassWater,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -35,6 +36,7 @@ interface TimelinePost {
   user_id: string;
   user_name: string;
   is_liked: boolean;
+  is_bookmarked: boolean;
   is_following: boolean;
   is_own: boolean;
   tasting_records: TastingRecord;
@@ -64,33 +66,34 @@ export default function TimelinePage() {
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
 
-  const fetchPosts = useCallback(async (p: number, reset = false) => {
-    if (reset) setLoading(true);
-    else setLoadingMore(true);
+  const fetchPosts = useCallback(
+    async (p: number, reset = false) => {
+      if (reset) setLoading(true);
+      else setLoadingMore(true);
 
-    try {
-      const res = await fetch(`/api/timeline?tab=${tab}&page=${p}`);
-      if (res.ok) {
-        const data = await res.json();
-        setPosts((prev) => (reset ? data.posts : [...prev, ...data.posts]));
-        setHasMore(data.hasMore);
+      try {
+        const res = await fetch(`/api/timeline?tab=${tab}&page=${p}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPosts((prev) => (reset ? data.posts : [...prev, ...data.posts]));
+          setHasMore(data.hasMore);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-    } catch {
-      // ignore
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, [tab]);
+    },
+    [tab]
+  );
 
-  // タブ切替時と初回マウント時にデータ取得
   useEffect(() => {
     setPage(1);
     setPosts([]);
     fetchPosts(1, true);
   }, [tab, fetchPosts]);
 
-  // ページが表示された時（戻ってきた時）に再取得
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -99,7 +102,8 @@ export default function TimelinePage() {
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
   }, [fetchPosts]);
 
   const handleLoadMore = () => {
@@ -108,17 +112,15 @@ export default function TimelinePage() {
     fetchPosts(next);
   };
 
-  const handleLike = async (postId: string, isLiked: boolean) => {
-    // Optimistic update
+  // ノミタイ（いいね）
+  const handleNomitai = async (postId: string, isLiked: boolean) => {
     setPosts((prev) =>
       prev.map((p) =>
         p.id === postId
           ? {
               ...p,
               is_liked: !isLiked,
-              likes_count: isLiked
-                ? p.likes_count - 1
-                : p.likes_count + 1,
+              likes_count: isLiked ? p.likes_count - 1 : p.likes_count + 1,
             }
           : p
       )
@@ -134,18 +136,53 @@ export default function TimelinePage() {
         }),
       });
     } catch {
-      // Revert on error
       setPosts((prev) =>
         prev.map((p) =>
           p.id === postId
             ? {
                 ...p,
                 is_liked: isLiked,
-                likes_count: isLiked
-                  ? p.likes_count
-                  : p.likes_count - 1,
+                likes_count: isLiked ? p.likes_count : p.likes_count - 1,
               }
             : p
+        )
+      );
+    }
+  };
+
+  // ツギノム（ブックマーク）
+  const handleBookmark = async (post: TimelinePost) => {
+    const wasBookmarked = post.is_bookmarked;
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === post.id ? { ...p, is_bookmarked: !wasBookmarked } : p
+      )
+    );
+
+    try {
+      await fetch("/api/timeline/bookmark", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post_id: post.id,
+          action: wasBookmarked ? "unbookmark" : "bookmark",
+          whiskey: wasBookmarked
+            ? undefined
+            : {
+                name: post.tasting_records.name,
+                distillery: post.tasting_records.distillery,
+                region: post.tasting_records.region,
+                type: post.tasting_records.type,
+                rating: post.tasting_records.rating,
+                photo_url: post.tasting_records.photo_url,
+                flavor_tags: post.tasting_records.flavor_tags,
+              },
+        }),
+      });
+    } catch {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === post.id ? { ...p, is_bookmarked: wasBookmarked } : p
         )
       );
     }
@@ -154,9 +191,7 @@ export default function TimelinePage() {
   const handleFollow = async (userId: string, isFollowing: boolean) => {
     setPosts((prev) =>
       prev.map((p) =>
-        p.user_id === userId
-          ? { ...p, is_following: !isFollowing }
-          : p
+        p.user_id === userId ? { ...p, is_following: !isFollowing } : p
       )
     );
 
@@ -172,9 +207,7 @@ export default function TimelinePage() {
     } catch {
       setPosts((prev) =>
         prev.map((p) =>
-          p.user_id === userId
-            ? { ...p, is_following: isFollowing }
-            : p
+          p.user_id === userId ? { ...p, is_following: isFollowing } : p
         )
       );
     }
@@ -187,9 +220,7 @@ export default function TimelinePage() {
     setLoadingComments(true);
 
     try {
-      const res = await fetch(
-        `/api/timeline/comment?post_id=${postId}`
-      );
+      const res = await fetch(`/api/timeline/comment?post_id=${postId}`);
       if (res.ok) {
         const data = await res.json();
         setComments(data.comments || []);
@@ -219,8 +250,6 @@ export default function TimelinePage() {
         const newComment = await res.json();
         setComments((prev) => [...prev, newComment]);
         setCommentText("");
-
-        // Update comment count in posts
         setPosts((prev) =>
           prev.map((p) =>
             p.id === commentPostId
@@ -256,7 +285,7 @@ export default function TimelinePage() {
 
   return (
     <div className="py-4 space-y-4 animate-fadeIn">
-      <h1 className="text-xl font-bold text-whiskey-text">ウイ活</h1>
+      <h1 className="text-xl font-bold text-whiskey-text">みんなのウイ活</h1>
 
       {/* Tab Switcher */}
       <div className="flex glass-card overflow-hidden !rounded-xl">
@@ -281,7 +310,7 @@ export default function TimelinePage() {
               : "text-whiskey-muted hover:text-whiskey-text"
           }`}
         >
-          お気に入り
+          フォロー中
           {tab === "following" && (
             <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-whiskey-gold rounded-full tab-indicator" />
           )}
@@ -303,7 +332,7 @@ export default function TimelinePage() {
           </div>
           <p className="text-whiskey-muted text-sm text-center">
             {tab === "following"
-              ? "お気に入りのユーザーの投稿がここに表示されます"
+              ? "フォロー中のユーザーの投稿がここに表示されます"
               : "まだウイ活がありません。最初の投稿をしてみましょう！"}
           </p>
         </div>
@@ -316,11 +345,10 @@ export default function TimelinePage() {
             <PostCard
               key={post.id}
               post={post}
-              onLike={() => handleLike(post.id, post.is_liked)}
+              onNomitai={() => handleNomitai(post.id, post.is_liked)}
               onComment={() => openComments(post.id)}
-              onFollow={() =>
-                handleFollow(post.user_id, post.is_following)
-              }
+              onBookmark={() => handleBookmark(post)}
+              onFollow={() => handleFollow(post.user_id, post.is_following)}
               formatTime={formatTime}
             />
           ))}
@@ -346,11 +374,8 @@ export default function TimelinePage() {
       {commentPostId && (
         <div className="fixed inset-0 glass-overlay z-50 flex items-end justify-center animate-fadeIn">
           <div className="w-full max-w-[480px] glass-card !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
-            {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-whiskey-border/50">
-              <h3 className="text-sm font-bold text-whiskey-text">
-                コメント
-              </h3>
+              <h3 className="text-sm font-bold text-whiskey-text">コメント</h3>
               <button
                 onClick={() => setCommentPostId(null)}
                 className="text-whiskey-muted hover:text-whiskey-text transition-all duration-200 hover:scale-110 active:scale-90"
@@ -359,7 +384,6 @@ export default function TimelinePage() {
               </button>
             </div>
 
-            {/* Comments List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {loadingComments && (
                 <div className="flex justify-center py-4">
@@ -375,7 +399,10 @@ export default function TimelinePage() {
                 </p>
               )}
               {comments.map((comment) => (
-                <div key={comment.id} className="flex gap-3 animate-fadeInUp">
+                <div
+                  key={comment.id}
+                  className="flex gap-3 animate-fadeInUp"
+                >
                   <div className="w-8 h-8 rounded-full bg-whiskey-gold/5 border border-whiskey-gold/10 flex items-center justify-center flex-shrink-0">
                     <span className="text-whiskey-gold/70 text-xs font-bold">
                       {comment.user_name.charAt(0)}
@@ -398,7 +425,6 @@ export default function TimelinePage() {
               ))}
             </div>
 
-            {/* Comment Input */}
             <div className="p-4 border-t border-whiskey-border/50 flex gap-2">
               <input
                 type="text"
@@ -436,14 +462,16 @@ export default function TimelinePage() {
 
 function PostCard({
   post,
-  onLike,
+  onNomitai,
   onComment,
+  onBookmark,
   onFollow,
   formatTime,
 }: {
   post: TimelinePost;
-  onLike: () => void;
+  onNomitai: () => void;
   onComment: () => void;
+  onBookmark: () => void;
   onFollow: () => void;
   formatTime: (d: string) => string;
 }) {
@@ -551,31 +579,60 @@ function PostCard({
           </p>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-5 pt-1">
+        {/* Actions: ノミタイ・コメント・ツギノム */}
+        <div className="flex items-center pt-1">
+          {/* ノミタイ */}
           <button
-            onClick={onLike}
-            className={`flex items-center gap-1.5 transition-all duration-300 active:scale-125 ${
+            onClick={onNomitai}
+            className={`flex items-center gap-1.5 transition-all duration-300 active:scale-125 mr-5 ${
               post.is_liked
-                ? "text-red-400"
-                : "text-whiskey-muted hover:text-red-400"
+                ? "text-whiskey-gold"
+                : "text-whiskey-muted hover:text-whiskey-gold"
             }`}
           >
-            <Heart
+            <GlassWater
               size={18}
               fill={post.is_liked ? "currentColor" : "none"}
+              strokeWidth={post.is_liked ? 2.5 : 2}
             />
-            {post.likes_count > 0 && (
-              <span className="text-xs">{post.likes_count}</span>
+            <span className="text-xs">
+              {post.likes_count > 0 && post.likes_count}
+              {post.is_liked && post.likes_count === 0 ? "" : ""}
+            </span>
+            {post.likes_count === 0 && !post.is_liked && (
+              <span className="text-[10px]">ノミタイ</span>
             )}
           </button>
+
+          {/* コメント */}
           <button
             onClick={onComment}
-            className="flex items-center gap-1.5 text-whiskey-muted hover:text-whiskey-gold transition-colors"
+            className="flex items-center gap-1.5 text-whiskey-muted hover:text-whiskey-gold transition-colors mr-5"
           >
             <MessageCircle size={18} />
-            {post.comments_count > 0 && (
-              <span className="text-xs">{post.comments_count}</span>
+            <span className="text-xs">
+              {post.comments_count > 0 ? post.comments_count : ""}
+            </span>
+            {post.comments_count === 0 && (
+              <span className="text-[10px]">コメント</span>
+            )}
+          </button>
+
+          {/* ツギノム (右端に配置) */}
+          <button
+            onClick={onBookmark}
+            className={`flex items-center gap-1.5 transition-all duration-300 active:scale-125 ml-auto ${
+              post.is_bookmarked
+                ? "text-amber-500"
+                : "text-whiskey-muted hover:text-amber-500"
+            }`}
+          >
+            <Bookmark
+              size={18}
+              fill={post.is_bookmarked ? "currentColor" : "none"}
+            />
+            {!post.is_bookmarked && (
+              <span className="text-[10px]">ツギノム</span>
             )}
           </button>
         </div>

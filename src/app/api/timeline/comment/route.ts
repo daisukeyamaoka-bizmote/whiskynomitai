@@ -35,9 +35,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get display names for comment authors
+    const commentUserIds = [...new Set((comments || []).map((c) => c.user_id))];
+    const nameResults = await Promise.all(
+      commentUserIds.map(async (uid) => {
+        const { data } = await supabase.rpc("get_user_display_name", { p_user_id: uid });
+        return { id: uid, name: data || "ウイスキーファン" };
+      })
+    );
+    const nameMap = new Map(nameResults.map((n) => [n.id, n.name]));
+
     const enriched = (comments || []).map((c) => ({
       ...c,
-      user_name: "ウイスキーファン",
+      user_name: nameMap.get(c.user_id) || "ウイスキーファン",
       is_own: c.user_id === user.id,
     }));
 
@@ -91,12 +101,11 @@ export async function POST(request: NextRequest) {
     // Increment comments count
     await supabase.rpc("increment_comments", { p_post_id: post_id });
 
-    const userName =
-      user.user_metadata?.full_name || "ウイスキーファン";
+    const { data: displayName } = await supabase.rpc("get_user_display_name", { p_user_id: user.id });
 
     return NextResponse.json({
       ...comment,
-      user_name: userName,
+      user_name: displayName || "ウイスキーファン",
       is_own: true,
     });
   } catch (error) {

@@ -82,18 +82,38 @@ export async function GET(request: NextRequest) {
       likedPostIds = new Set((userLikes || []).map((l) => l.post_id));
     }
 
-    // Check which users the current user follows
+    // Check bookmarks and follows in parallel
     const userIds = [...new Set((posts || []).map((p) => p.user_id))];
-    let followingSet = new Set<string>();
-    if (userIds.length > 0) {
-      const { data: userFollows } = await supabase
-        .from("user_follows")
-        .select("following_id")
-        .eq("follower_id", user.id)
-        .in("following_id", userIds);
+    const [followResult, bookmarkResult, nameResults] = await Promise.all([
+      userIds.length > 0
+        ? supabase
+            .from("user_follows")
+            .select("following_id")
+            .eq("follower_id", user.id)
+            .in("following_id", userIds)
+        : Promise.resolve({ data: [] }),
+      postIds.length > 0
+        ? supabase
+            .from("user_bookmarks")
+            .select("post_id")
+            .eq("user_id", user.id)
+            .in("post_id", postIds)
+        : Promise.resolve({ data: [] }),
+      // Fetch display names for post authors
+      supabase.rpc("get_user_display_name", { p_user_id: user.id }).then(() =>
+        // Get names for all unique user IDs
+        Promise.all(
+          userIds.map(async (uid) => {
+            const { data } = await supabase.rpc("get_user_display_name", { p_user_id: uid });
+            return { id: uid, name: data || "ウイスキーファン" };
+          })
+        )
+      ),
+    ]);
 
-      followingSet = new Set((userFollows || []).map((f) => f.following_id));
-    }
+    const followingSet = new Set((followResult.data || []).map((f: { following_id: string }) => f.following_id));
+    const bookmarkedPostIds = new Set((bookmarkResult.data || []).map((b: { post_id: string }) => b.post_id));
+    const nameMap = new Map(nameResults.map((n) => [n.id, n.name]));
 
     // Map to frontend-friendly format
     const enrichedPosts = (posts || []).map((post) => ({
@@ -103,8 +123,9 @@ export async function GET(request: NextRequest) {
       comments_count: post.comments_count,
       created_at: post.created_at,
       user_id: post.user_id,
-      user_name: "ウイスキーファン",
+      user_name: nameMap.get(post.user_id) || "ウイスキーファン",
       is_liked: likedPostIds.has(post.id),
+      is_bookmarked: bookmarkedPostIds.has(post.id),
       is_following: followingSet.has(post.user_id),
       is_own: post.user_id === user.id,
       tasting_records: {
