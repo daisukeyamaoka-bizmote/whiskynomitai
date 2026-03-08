@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import ShareRedirect from "./ShareRedirect";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -90,32 +91,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function SharePage({ params }: Props) {
   const { id } = await params;
-  const redirectUrl = `/?post=${id}`;
-
-  // Render HTML with meta tags for crawlers, then JS redirect for real users
-  return (
-    <html lang="ja">
-      <head>
-        <meta httpEquiv="refresh" content={`0;url=${redirectUrl}`} />
-      </head>
-      <body
-        style={{
-          background: "#0f0d0a",
-          color: "#d4af37",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          height: "100vh",
-          fontFamily: "sans-serif",
-        }}
-      >
-        <p>リダイレクト中...</p>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.location.replace("${redirectUrl}");`,
-          }}
-        />
-      </body>
-    </html>
-  );
+  return <ShareRedirect postId={id} />;
 }
