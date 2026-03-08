@@ -65,9 +65,12 @@ export default function SuggestPage() {
 
   if (loading) {
     return (
-      <div className="py-4 space-y-6">
+      <div className="py-4 space-y-6 animate-fadeIn">
         <h1 className="text-xl font-bold text-whiskey-text">おすすめ</h1>
         <div className="flex flex-col items-center gap-4 py-12">
+          <div className="w-16 h-16 rounded-full glass-card flex items-center justify-center animate-pulse-glow">
+            <Sparkles size={28} className="text-whiskey-gold" />
+          </div>
           <Loader2 size={32} className="animate-spin text-whiskey-gold" />
           <p className="text-whiskey-muted text-sm">
             AIがあなたの好みを分析中...
@@ -79,10 +82,10 @@ export default function SuggestPage() {
 
   if (error) {
     return (
-      <div className="py-4 space-y-6">
+      <div className="py-4 space-y-6 animate-fadeIn">
         <h1 className="text-xl font-bold text-whiskey-text">おすすめ</h1>
-        <div className="flex flex-col items-center gap-4 py-12">
-          <div className="w-20 h-20 rounded-full bg-whiskey-card border border-whiskey-border flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 py-12 animate-fadeInScale">
+          <div className="w-20 h-20 rounded-full glass-card flex items-center justify-center animate-float">
             <Sparkles size={32} className="text-whiskey-muted" />
           </div>
           <p className="text-whiskey-muted text-center text-sm">{error}</p>
@@ -90,7 +93,7 @@ export default function SuggestPage() {
           {needsUpgrade && (
             <Link
               href="/plan"
-              className="inline-flex items-center gap-2 bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
+              className="inline-flex items-center gap-2 glass-button text-whiskey-bg font-bold px-6 py-2.5 text-sm active:scale-90 transition-transform"
             >
               <Crown size={16} />
               プレミアムにアップグレード
@@ -103,10 +106,10 @@ export default function SuggestPage() {
                 {[0, 1].map((i) => (
                   <div
                     key={i}
-                    className={`w-8 h-2 rounded-full ${
+                    className={`w-8 h-2 rounded-full transition-all duration-500 ${
                       i < totalTastings
                         ? "bg-whiskey-gold"
-                        : "bg-whiskey-border"
+                        : "bg-whiskey-border/50"
                     }`}
                   />
                 ))}
@@ -116,7 +119,7 @@ export default function SuggestPage() {
               </p>
               <Link
                 href="/record"
-                className="inline-block bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
+                className="inline-block glass-button text-whiskey-bg font-bold px-6 py-2.5 text-sm active:scale-90 transition-transform"
               >
                 ウイスキーを記録する
               </Link>
@@ -130,12 +133,12 @@ export default function SuggestPage() {
   if (!data) return null;
 
   return (
-    <div className="py-4 space-y-6">
+    <div className="py-4 space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-whiskey-text">おすすめ</h1>
         <button
           onClick={fetchSuggestions}
-          className="text-whiskey-muted hover:text-whiskey-gold transition-colors"
+          className="text-whiskey-muted hover:text-whiskey-gold transition-all duration-300 active:scale-75 active:rotate-180"
           aria-label="更新"
         >
           <RefreshCw size={18} />
@@ -143,7 +146,7 @@ export default function SuggestPage() {
       </div>
 
       {/* Taste Profile */}
-      <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+      <div className="glass-card-gold p-4 space-y-3">
         <h2 className="text-sm font-bold text-whiskey-gold">
           あなたの好み傾向
         </h2>
@@ -159,10 +162,7 @@ export default function SuggestPage() {
             <p className="text-xs text-whiskey-muted mb-1.5">好みフレーバー</p>
             <div className="flex flex-wrap gap-1.5">
               {data.taste_profile.top_flavors.map((f) => (
-                <span
-                  key={f}
-                  className="px-2 py-0.5 bg-whiskey-gold/10 text-whiskey-gold text-xs rounded-full border border-whiskey-gold/20"
-                >
+                <span key={f} className="glass-tag">
                   {f}
                 </span>
               ))}
@@ -175,10 +175,7 @@ export default function SuggestPage() {
             <p className="text-xs text-whiskey-muted mb-1.5">好み産地</p>
             <div className="flex flex-wrap gap-1.5">
               {data.taste_profile.preferred_regions.map((r) => (
-                <span
-                  key={r}
-                  className="px-2 py-0.5 bg-whiskey-gold/10 text-whiskey-gold text-xs rounded-full border border-whiskey-gold/20"
-                >
+                <span key={r} className="glass-tag">
                   {r}
                 </span>
               ))}
@@ -188,14 +185,14 @@ export default function SuggestPage() {
       </div>
 
       {/* Suggestions */}
-      <div className="space-y-3">
+      <div className="space-y-3 stagger-children">
         <h2 className="text-sm font-bold text-whiskey-gold">
           おすすめウイスキー
         </h2>
         {data.suggestions.map((suggestion, index) => (
           <div
             key={index}
-            className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3"
+            className="glass-card p-4 space-y-3 active:scale-[0.98] transition-transform duration-200"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -209,7 +206,7 @@ export default function SuggestPage() {
                 </p>
               </div>
               <div className="flex-shrink-0 ml-3">
-                <div className="bg-whiskey-gold/10 border border-whiskey-gold/20 rounded-lg px-2 py-1 text-center">
+                <div className="glass-card-gold !rounded-lg px-2 py-1 text-center">
                   <span className="text-whiskey-gold font-bold text-sm">
                     {suggestion.match_score}%
                   </span>
@@ -227,10 +224,10 @@ export default function SuggestPage() {
                   return (
                     <span
                       key={tag}
-                      className={`px-2 py-0.5 text-xs rounded-full border ${
+                      className={`glass-tag ${
                         isMatch
-                          ? "bg-whiskey-gold/20 text-whiskey-gold border-whiskey-gold/40"
-                          : "bg-whiskey-gold/5 text-whiskey-muted border-whiskey-border"
+                          ? "!bg-whiskey-gold/20 !border-whiskey-gold/40"
+                          : "!bg-whiskey-gold/5 !text-whiskey-muted !border-whiskey-border"
                       }`}
                     >
                       {tag}

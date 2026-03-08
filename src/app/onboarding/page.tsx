@@ -144,7 +144,7 @@ export default function OnboardingPage() {
         {/* Welcome */}
         {step === "welcome" && (
           <div className="flex flex-col items-center gap-6 py-12 animate-fadeIn">
-            <div className="w-24 h-24 rounded-full bg-whiskey-gold/10 border-2 border-whiskey-gold flex items-center justify-center">
+            <div className="w-24 h-24 rounded-full glass-card !border-whiskey-gold flex items-center justify-center animate-pulse-glow">
               <Wine size={40} className="text-whiskey-gold" />
             </div>
             <div className="text-center space-y-3">
@@ -166,7 +166,7 @@ export default function OnboardingPage() {
             </div>
             <button
               onClick={() => setStep("experience")}
-              className="bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-8 py-3 rounded-lg transition-colors flex items-center gap-2"
+              className="glass-button text-whiskey-bg font-bold px-8 py-3 flex items-center gap-2 active:scale-95 transition-transform"
             >
               はじめる
               <ArrowRight size={18} />
@@ -212,7 +212,7 @@ export default function OnboardingPage() {
                     className={`text-left p-3 rounded-lg border-2 transition-all ${
                       selected
                         ? "border-whiskey-gold bg-whiskey-gold/10"
-                        : "border-whiskey-border bg-whiskey-card hover:border-whiskey-gold/30"
+                        : "border-whiskey-border/50 bg-white/[0.03] backdrop-blur-sm hover:border-whiskey-gold/30"
                     }`}
                   >
                     <div className="flex items-start justify-between">
@@ -237,7 +237,7 @@ export default function OnboardingPage() {
             <button
               onClick={() => setStep("style")}
               disabled={answers.flavors.length === 0}
-              className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3 rounded-lg transition-colors disabled:opacity-30 flex items-center justify-center gap-2"
+              className="w-full glass-button text-whiskey-bg font-bold py-3 disabled:opacity-30 flex items-center justify-center gap-2 active:scale-95 transition-transform"
             >
               次へ
               <ArrowRight size={18} />
@@ -294,7 +294,7 @@ export default function OnboardingPage() {
         {step === "analyzing" && (
           <div className="flex flex-col items-center gap-6 py-20 animate-fadeIn">
             <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-whiskey-gold/10 border-2 border-whiskey-gold flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full glass-card !border-whiskey-gold flex items-center justify-center animate-float">
                 <Sparkles size={32} className="text-whiskey-gold" />
               </div>
               <Loader2
@@ -319,7 +319,7 @@ export default function OnboardingPage() {
         {step === "results" && (
           <div className="space-y-6 py-4 animate-fadeIn">
             {/* Sommelier Message */}
-            <div className="bg-gradient-to-br from-whiskey-gold/15 to-whiskey-gold/5 border border-whiskey-gold/30 rounded-xl p-5 space-y-3">
+            <div className="glass-card-gold !rounded-xl p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <Sparkles size={18} className="text-whiskey-gold" />
                 <p className="text-sm font-bold text-whiskey-gold">
@@ -339,7 +339,7 @@ export default function OnboardingPage() {
               {recommendations.map((rec, index) => (
                 <div
                   key={index}
-                  className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-2"
+                  className="glass-card p-4 space-y-2"
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-full bg-whiskey-gold/10 border border-whiskey-gold/20 flex items-center justify-center flex-shrink-0">
@@ -364,7 +364,7 @@ export default function OnboardingPage() {
                       {rec.flavor_tags.map((tag) => (
                         <span
                           key={tag}
-                          className="px-2 py-0.5 bg-whiskey-gold/10 text-whiskey-gold text-xs rounded-full border border-whiskey-gold/20"
+                          className="glass-tag"
                         >
                           {tag}
                         </span>
@@ -384,7 +384,7 @@ export default function OnboardingPage() {
               <button
                 onClick={handleFinish}
                 disabled={finishing}
-                className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full glass-button text-whiskey-bg font-bold py-3.5 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-transform"
               >
                 {finishing ? (
                   <>
@@ -442,7 +442,7 @@ function QuestionStep({
             className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
               selected === opt.id
                 ? "border-whiskey-gold bg-whiskey-gold/10"
-                : "border-whiskey-border bg-whiskey-card hover:border-whiskey-gold/30"
+                : "border-whiskey-border/50 bg-white/[0.03] backdrop-blur-sm hover:border-whiskey-gold/30"
             }`}
           >
             <p

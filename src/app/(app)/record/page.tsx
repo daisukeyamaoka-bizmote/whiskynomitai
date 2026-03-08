@@ -218,13 +218,13 @@ export default function RecordPage() {
   };
 
   return (
-    <div className="py-4 space-y-6">
+    <div className="py-4 space-y-6 animate-fadeIn">
       <h1 className="text-xl font-bold text-whiskey-text">テイスティング記録</h1>
 
       {/* Capture Step */}
       {step === "capture" && (
-        <div className="flex flex-col items-center gap-6 py-8">
-          <div className="w-32 h-32 rounded-full bg-whiskey-card border-2 border-dashed border-whiskey-border flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6 py-8 animate-fadeInScale">
+          <div className="w-32 h-32 rounded-full glass-card border-2 border-dashed border-whiskey-gold/10 flex items-center justify-center animate-pulse-glow">
             <Camera size={48} className="text-whiskey-muted" />
           </div>
           <p className="text-whiskey-muted text-center text-sm">
@@ -235,14 +235,14 @@ export default function RecordPage() {
           <div className="flex flex-col gap-3 w-full max-w-xs">
             <button
               onClick={() => cameraInputRef.current?.click()}
-              className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-8 py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full glass-button text-whiskey-bg font-bold px-8 py-3.5 flex items-center justify-center gap-2"
             >
               <Camera size={20} />
               ボトルを撮影する
             </button>
             <button
               onClick={() => albumInputRef.current?.click()}
-              className="w-full border border-whiskey-gold text-whiskey-gold hover:bg-whiskey-gold/10 font-bold px-8 py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full glass-card !border-whiskey-gold/30 text-whiskey-gold font-bold px-8 py-3.5 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
             >
               <ImagePlus size={20} />
               アルバムから選ぶ
@@ -318,7 +318,7 @@ export default function RecordPage() {
           )}
 
           {/* Whiskey Info Card */}
-          <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+          <div className="glass-card p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-whiskey-gold">
                 ウイスキー情報
@@ -394,7 +394,7 @@ export default function RecordPage() {
                 {whiskeyInfo.flavor_tags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-2 py-1 bg-whiskey-gold/10 text-whiskey-gold text-xs rounded-full border border-whiskey-gold/20"
+                    className="glass-tag px-2 py-1 text-whiskey-gold text-xs"
                   >
                     {tag}
                   </span>
@@ -411,7 +411,7 @@ export default function RecordPage() {
           </div>
 
           {/* Rating */}
-          <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+          <div className="glass-card p-4 space-y-3">
             <h2 className="text-lg font-bold text-whiskey-gold">評価</h2>
             <div className="flex items-center gap-1 justify-center">
               {Array.from({ length: 10 }, (_, i) => (
@@ -433,7 +433,7 @@ export default function RecordPage() {
           </div>
 
           {/* Tasting Note */}
-          <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+          <div className="glass-card p-4 space-y-3">
             <h2 className="text-lg font-bold text-whiskey-gold">
               テイスティングノート
             </h2>
@@ -441,12 +441,12 @@ export default function RecordPage() {
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder="香り、味わい、余韻などの印象を自由に記録..."
-              className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors min-h-[100px] resize-none text-sm"
+              className="w-full glass-input px-3 py-2 text-whiskey-text placeholder:text-whiskey-muted/50 min-h-[100px] resize-none text-sm"
             />
           </div>
 
           {/* Optional Fields */}
-          <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+          <div className="glass-card p-4 space-y-3">
             <h2 className="text-lg font-bold text-whiskey-gold">その他</h2>
             <Field
               label="飲んだ場所"
@@ -467,14 +467,14 @@ export default function RecordPage() {
           <div className="flex gap-3">
             <button
               onClick={handleRetry}
-              className="flex-1 border border-whiskey-border text-whiskey-text py-3 rounded-lg hover:bg-whiskey-card transition-colors"
+              className="flex-1 glass-card text-whiskey-text py-3 text-center active:scale-[0.98] transition-transform"
             >
               やり直す
             </button>
             <button
               onClick={handleSave}
               disabled={step === "saving"}
-              className="flex-1 bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 glass-button text-whiskey-bg font-bold py-3 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {step === "saving" ? (
                 <>
@@ -523,7 +523,7 @@ export default function RecordPage() {
           </div>
 
           {/* Preview Card */}
-          <div className="bg-whiskey-card border border-whiskey-border rounded-lg overflow-hidden">
+          <div className="glass-card overflow-hidden">
             {imagePreview && (
               <div className="aspect-[4/3]">
                 <Image
@@ -559,7 +559,7 @@ export default function RecordPage() {
               value={shareComment}
               onChange={(e) => setShareComment(e.target.value)}
               placeholder="今日のウイスキーの感想..."
-              className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors min-h-[80px] resize-none text-sm"
+              className="w-full glass-input px-3 py-2 text-whiskey-text placeholder:text-whiskey-muted/50 min-h-[80px] resize-none text-sm"
             />
           </div>
 
@@ -568,7 +568,7 @@ export default function RecordPage() {
             <button
               onClick={handleShareToTimeline}
               disabled={sharing}
-              className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full glass-button text-whiskey-bg font-bold py-3.5 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {sharing ? (
                 <>
@@ -584,7 +584,7 @@ export default function RecordPage() {
             </button>
             <button
               onClick={() => router.push("/collection")}
-              className="w-full border border-whiskey-border text-whiskey-muted py-3 rounded-lg hover:bg-whiskey-card transition-colors flex items-center justify-center gap-2 text-sm"
+              className="w-full glass-card text-whiskey-muted py-3 flex items-center justify-center gap-2 text-sm active:scale-[0.98] transition-transform"
             >
               <SkipForward size={16} />
               投稿せずにコレクションへ
@@ -617,7 +617,7 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-whiskey-text text-sm placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+        className="w-full glass-input px-3 py-2 text-whiskey-text text-sm placeholder:text-whiskey-muted/50"
       />
     </div>
   );

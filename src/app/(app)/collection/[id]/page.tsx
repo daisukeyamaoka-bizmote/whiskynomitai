@@ -212,7 +212,7 @@ export default function RecordDetailPage({
   if (!record) return null;
 
   return (
-    <div className="py-4 space-y-4">
+    <div className="py-4 space-y-4 animate-fadeIn">
       {/* Back button */}
       <Link
         href="/collection"
@@ -236,7 +236,7 @@ export default function RecordDetailPage({
       )}
 
       {/* Whiskey Info */}
-      <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+      <div className="glass-card p-4 space-y-3">
         <h1 className="text-xl font-bold text-whiskey-gold">{record.name}</h1>
 
         <div className="space-y-2 text-sm">
@@ -278,7 +278,7 @@ export default function RecordDetailPage({
             {record.flavor_tags.map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-1 bg-whiskey-gold/10 text-whiskey-gold text-xs rounded-full border border-whiskey-gold/20"
+                className="glass-tag"
               >
                 {tag}
               </span>
@@ -296,7 +296,7 @@ export default function RecordDetailPage({
 
       {/* AI Research Section */}
       {record.research_data ? (
-        <div className="bg-whiskey-card border border-whiskey-border rounded-lg overflow-hidden">
+        <div className="glass-card overflow-hidden">
           <button
             onClick={() => setResearchOpen(!researchOpen)}
             className="w-full flex items-center justify-between p-4 text-left"
@@ -413,7 +413,7 @@ export default function RecordDetailPage({
         <button
           onClick={handleResearch}
           disabled={researching}
-          className="w-full bg-gradient-to-r from-whiskey-gold/20 to-whiskey-gold/10 border border-whiskey-gold/30 rounded-lg p-4 flex items-center justify-center gap-2 hover:from-whiskey-gold/30 hover:to-whiskey-gold/20 transition-all disabled:opacity-50"
+          className="w-full glass-card-gold p-4 flex items-center justify-center gap-2 transition-all disabled:opacity-50 active:scale-[0.98]"
         >
           {researching ? (
             <>
@@ -437,7 +437,7 @@ export default function RecordDetailPage({
       )}
 
       {/* Rating */}
-      <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4">
+      <div className="glass-card p-4">
         <div className="text-center">
           <span className="text-whiskey-muted text-sm">評価</span>
           <div className="flex items-center gap-1 justify-center mt-2">
@@ -473,7 +473,7 @@ export default function RecordDetailPage({
       </div>
 
       {/* Tasting Note */}
-      <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-2">
+      <div className="glass-card p-4 space-y-2">
         <h2 className="text-sm font-bold text-whiskey-gold">
           テイスティングノート
         </h2>
@@ -483,7 +483,7 @@ export default function RecordDetailPage({
             onChange={(e) =>
               setEditData({ ...editData, note: e.target.value })
             }
-            className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-whiskey-text text-sm placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors min-h-[80px] resize-none"
+            className="w-full glass-input px-3 py-2 text-whiskey-text text-sm placeholder:text-whiskey-muted/50 min-h-[80px] resize-none"
           />
         ) : record.note ? (
           <p className="text-whiskey-text text-sm leading-relaxed">
@@ -495,7 +495,7 @@ export default function RecordDetailPage({
       </div>
 
       {/* Meta Info */}
-      <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-2">
+      <div className="glass-card p-4 space-y-2">
         {editing ? (
           <div className="space-y-3">
             <div>
@@ -511,7 +511,7 @@ export default function RecordDetailPage({
                     drinking_location: e.target.value,
                   })
                 }
-                className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-whiskey-text text-sm focus:outline-none focus:border-whiskey-gold transition-colors"
+                className="w-full glass-input px-3 py-2 text-whiskey-text text-sm"
               />
             </div>
             <div>
@@ -527,7 +527,7 @@ export default function RecordDetailPage({
                     price: e.target.value ? parseInt(e.target.value) : null,
                   })
                 }
-                className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-whiskey-text text-sm focus:outline-none focus:border-whiskey-gold transition-colors"
+                className="w-full glass-input px-3 py-2 text-whiskey-text text-sm"
               />
             </div>
           </div>
@@ -565,7 +565,7 @@ export default function RecordDetailPage({
           <>
             <button
               onClick={() => setEditing(false)}
-              className="flex-1 border border-whiskey-border text-whiskey-text py-3 rounded-lg hover:bg-whiskey-card transition-colors flex items-center justify-center gap-2"
+              className="flex-1 glass-card !py-3 text-whiskey-text flex items-center justify-center gap-2 active:scale-95 transition-transform"
             >
               <X size={16} />
               キャンセル
@@ -573,7 +573,7 @@ export default function RecordDetailPage({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 glass-button text-whiskey-bg font-bold py-3 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95 transition-transform"
             >
               {saving ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -587,14 +587,14 @@ export default function RecordDetailPage({
           <>
             <button
               onClick={handleEdit}
-              className="flex-1 border border-whiskey-border text-whiskey-text py-3 rounded-lg hover:bg-whiskey-card transition-colors flex items-center justify-center gap-2"
+              className="flex-1 glass-card !py-3 text-whiskey-text flex items-center justify-center gap-2 active:scale-95 transition-transform"
             >
               <Edit3 size={16} />
               編集
             </button>
             <button
               onClick={() => setShowShare(true)}
-              className="flex-1 border border-whiskey-gold/30 text-whiskey-gold py-3 rounded-lg hover:bg-whiskey-gold/10 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 glass-card !py-3 !border-whiskey-gold/30 text-whiskey-gold flex items-center justify-center gap-2 active:scale-95 transition-transform"
             >
               <Share2 size={16} />
               シェア
@@ -615,7 +615,7 @@ export default function RecordDetailPage({
         <div className="text-center">
           <Link
             href="/plan"
-            className="inline-flex items-center gap-2 bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
+            className="inline-flex items-center gap-2 glass-button text-whiskey-bg font-bold px-6 py-2.5 text-sm active:scale-90 transition-transform"
           >
             <Crown size={16} />
             プレミアムにアップグレード
@@ -640,8 +640,8 @@ export default function RecordDetailPage({
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-          <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-6 max-w-sm w-full space-y-4">
+        <div className="fixed inset-0 glass-overlay flex items-center justify-center z-50 px-4">
+          <div className="glass-card p-6 max-w-sm w-full space-y-4 animate-fadeInScale">
             <h3 className="text-lg font-bold text-whiskey-text">
               記録を削除しますか？
             </h3>

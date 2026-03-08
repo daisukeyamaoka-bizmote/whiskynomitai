@@ -55,12 +55,12 @@ export default function PlanPage() {
   const isPremium = usage?.isPremium || false;
 
   return (
-    <div className="py-4 space-y-6">
+    <div className="py-4 space-y-6 animate-fadeIn">
       <h1 className="text-xl font-bold text-whiskey-text">プラン</h1>
 
       {/* Current Usage */}
       {usage && !isPremium && (
-        <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-2">
+        <div className="glass-card p-4 space-y-2">
           <p className="text-sm text-whiskey-muted">今月のAI利用状況</p>
           <div className="flex items-end gap-2">
             <span className="text-3xl font-bold text-whiskey-gold">
@@ -85,7 +85,7 @@ export default function PlanPage() {
       )}
 
       {isPremium && (
-        <div className="bg-gradient-to-br from-whiskey-gold/20 to-whiskey-gold/5 border border-whiskey-gold/30 rounded-lg p-4 flex items-center gap-3">
+        <div className="glass-card-gold p-4 flex items-center gap-3">
           <Crown size={24} className="text-whiskey-gold" />
           <div>
             <p className="text-sm font-bold text-whiskey-gold">
@@ -102,10 +102,10 @@ export default function PlanPage() {
       <div className="space-y-4">
         {/* Free Plan */}
         <div
-          className={`border rounded-xl p-5 space-y-4 ${
+          className={`glass-card !rounded-xl p-5 space-y-4 ${
             !isPremium
-              ? "border-whiskey-gold bg-whiskey-card"
-              : "border-whiskey-border bg-whiskey-card/50"
+              ? "!border-whiskey-gold"
+              : ""
           }`}
         >
           <div className="flex items-center justify-between">
@@ -141,10 +141,10 @@ export default function PlanPage() {
 
         {/* Premium Plan */}
         <div
-          className={`border rounded-xl p-5 space-y-4 relative overflow-hidden ${
+          className={`glass-card !rounded-xl p-5 space-y-4 relative overflow-hidden ${
             isPremium
-              ? "border-whiskey-gold bg-gradient-to-br from-whiskey-card to-whiskey-gold/5"
-              : "border-whiskey-gold/50 bg-whiskey-card"
+              ? "!border-whiskey-gold"
+              : "!border-whiskey-gold/50"
           }`}
         >
           {/* Recommended badge */}
@@ -218,7 +218,7 @@ export default function PlanPage() {
                   "決済機能は準備中です。\nStripe連携後にご利用いただけます。"
                 );
               }}
-              className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full glass-button text-whiskey-bg font-bold py-3.5 flex items-center justify-center gap-2 active:scale-95 transition-transform"
             >
               <Crown size={16} />
               プレミアムにアップグレード
@@ -228,7 +228,7 @@ export default function PlanPage() {
       </div>
 
       {/* Value proposition */}
-      <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+      <div className="glass-card p-4 space-y-3">
         <h3 className="text-sm font-bold text-whiskey-gold">
           月500円でできること
         </h3>

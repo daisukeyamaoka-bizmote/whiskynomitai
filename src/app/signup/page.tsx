@@ -102,7 +102,7 @@ export default function SignupPage() {
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full bg-whiskey-card border border-whiskey-border rounded-lg px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+              className="w-full glass-input px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50"
               placeholder="山田 太郎"
               required
             />
@@ -119,7 +119,7 @@ export default function SignupPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-whiskey-card border border-whiskey-border rounded-lg px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+              className="w-full glass-input px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50"
               placeholder="email@example.com"
               required
             />
@@ -136,7 +136,7 @@ export default function SignupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-whiskey-card border border-whiskey-border rounded-lg px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+              className="w-full glass-input px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50"
               placeholder="6文字以上"
               required
             />
@@ -153,7 +153,7 @@ export default function SignupPage() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full bg-whiskey-card border border-whiskey-border rounded-lg px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+              className="w-full glass-input px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50"
               placeholder="パスワードを再入力"
               required
             />
@@ -164,7 +164,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
+            className="w-full glass-button text-whiskey-bg font-bold py-3 disabled:opacity-50 active:scale-95 transition-transform"
           >
             {loading ? "登録中..." : "アカウントを作成"}
           </button>

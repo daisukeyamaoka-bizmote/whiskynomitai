@@ -240,11 +240,11 @@ export default function HomePage() {
   const xpBreakdown = getXpBreakdown(stats);
 
   return (
-    <div className="py-4 space-y-6">
+    <div className="py-4 space-y-6 animate-fadeIn">
       {/* Welcome / CTA */}
       {stats.total === 0 ? (
-        <div className="flex flex-col items-center gap-4 py-8">
-          <div className="w-24 h-24 rounded-full bg-whiskey-card border-2 border-whiskey-border flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 py-8 animate-fadeInScale">
+          <div className="w-24 h-24 rounded-full glass-card border-2 border-whiskey-border flex items-center justify-center animate-float">
             <Wine size={40} className="text-whiskey-gold" />
           </div>
           <div className="text-center space-y-2">
@@ -259,7 +259,7 @@ export default function HomePage() {
           </div>
           <Link
             href="/record"
-            className="bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-8 py-3 rounded-lg transition-colors flex items-center gap-2"
+            className="glass-button text-whiskey-bg font-bold px-8 py-3 flex items-center gap-2"
           >
             <Camera size={18} />
             最初の一杯を記録する
@@ -269,7 +269,7 @@ export default function HomePage() {
         <>
           {/* Level Card */}
           <div
-            className="bg-gradient-to-br from-whiskey-card to-whiskey-bg border border-whiskey-border rounded-xl p-4 space-y-3 cursor-pointer"
+            className="glass-card-gold p-4 space-y-3 cursor-pointer"
             onClick={() => setShowXpDetail(!showXpDetail)}
           >
             <div className="flex items-center gap-4">
@@ -346,7 +346,7 @@ export default function HomePage() {
           {/* CTA Banner */}
           <Link
             href="/record"
-            className="block bg-whiskey-card border border-whiskey-border rounded-lg p-4 hover:border-whiskey-gold/30 transition-colors"
+            className="block glass-card p-4 active:scale-[0.98] transition-transform duration-200"
           >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-whiskey-gold/10 flex items-center justify-center flex-shrink-0">
@@ -387,7 +387,7 @@ export default function HomePage() {
             preferences.total_tastings >= 2 &&
             (preferences.top_flavors.length > 0 ||
               preferences.top_regions.length > 0) && (
-              <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+              <div className="glass-card p-4 space-y-3">
                 <h2 className="text-sm font-bold text-whiskey-gold">
                   あなたの好み
                 </h2>
@@ -400,7 +400,7 @@ export default function HomePage() {
                       {preferences.top_flavors.map((f) => (
                         <span
                           key={f}
-                          className="px-2 py-0.5 bg-whiskey-gold/10 text-whiskey-gold text-xs rounded-full border border-whiskey-gold/20"
+                          className="glass-tag px-2 py-0.5 text-whiskey-gold text-xs"
                         >
                           {f}
                         </span>
@@ -415,7 +415,7 @@ export default function HomePage() {
                       {preferences.top_regions.map((r) => (
                         <span
                           key={r}
-                          className="px-2 py-0.5 bg-whiskey-gold/10 text-whiskey-gold text-xs rounded-full border border-whiskey-gold/20"
+                          className="glass-tag px-2 py-0.5 text-whiskey-gold text-xs"
                         >
                           {r}
                         </span>
@@ -444,7 +444,7 @@ export default function HomePage() {
                 <Link
                   key={record.id}
                   href={`/collection/${record.id}`}
-                  className="block bg-whiskey-card border border-whiskey-border rounded-lg p-3 hover:border-whiskey-gold/30 transition-colors"
+                  className="block glass-card p-3 active:scale-[0.98] transition-transform duration-200"
                 >
                   <div className="flex gap-3">
                     {record.photo_url ? (
@@ -502,7 +502,7 @@ export default function HomePage() {
             </div>
 
             {suggestLoading && !suggestData && (
-              <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-6 flex flex-col items-center gap-3">
+              <div className="glass-card p-6 flex flex-col items-center gap-3">
                 <Loader2
                   size={24}
                   className="animate-spin text-whiskey-gold"
@@ -514,7 +514,7 @@ export default function HomePage() {
             )}
 
             {suggestError && !suggestData && (
-              <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 text-center space-y-3">
+              <div className="glass-card p-4 text-center space-y-3">
                 <p className="text-whiskey-muted text-sm">{suggestError}</p>
                 {suggestNeedsUpgrade && (
                   <Link
@@ -532,7 +532,7 @@ export default function HomePage() {
               <>
                 {/* Taste Tendency */}
                 {suggestData.taste_profile.tendency && (
-                  <div className="bg-gradient-to-br from-whiskey-gold/10 to-whiskey-gold/5 border border-whiskey-gold/20 rounded-lg p-3">
+                  <div className="glass-card-gold p-3">
                     <p className="text-whiskey-text text-sm leading-relaxed">
                       {suggestData.taste_profile.tendency}
                     </p>
@@ -543,7 +543,7 @@ export default function HomePage() {
                 {suggestData.suggestions.map((suggestion, index) => (
                   <div
                     key={index}
-                    className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-2.5"
+                    className="glass-card p-4 space-y-2.5"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -561,7 +561,7 @@ export default function HomePage() {
                         </p>
                       </div>
                       <div className="flex-shrink-0 ml-2">
-                        <div className="bg-whiskey-gold/10 border border-whiskey-gold/20 rounded-lg px-2 py-0.5 text-center">
+                        <div className="glass-tag !rounded-lg px-2 py-0.5 text-center">
                           <span className="text-whiskey-gold font-bold text-xs">
                             {suggestion.match_score}%
                           </span>
@@ -617,7 +617,7 @@ function StatCard({
   value: string;
 }) {
   return (
-    <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-3 text-center space-y-1">
+    <div className="glass-card p-3 text-center space-y-1">
       <div className="text-whiskey-gold flex justify-center">{icon}</div>
       <p className="text-lg font-bold text-whiskey-text">{value}</p>
       <p className="text-xs text-whiskey-muted">{label}</p>

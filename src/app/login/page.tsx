@@ -58,7 +58,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-whiskey-card border border-whiskey-border rounded-lg px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+              className="w-full glass-input px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50"
               placeholder="email@example.com"
               required
             />
@@ -75,7 +75,7 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-whiskey-card border border-whiskey-border rounded-lg px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+              className="w-full glass-input px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50"
               placeholder="パスワード"
               required
             />
@@ -88,7 +88,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3 rounded-lg transition-colors disabled:opacity-50"
+            className="w-full glass-button text-whiskey-bg font-bold py-3 disabled:opacity-50 active:scale-95 transition-transform"
           >
             {loading ? "ログイン中..." : "ログイン"}
           </button>
