@@ -14,7 +14,7 @@ import {
   Trophy,
   Sparkles,
   RefreshCw,
-
+  Share2,
   LogOut,
   Edit3,
   X,
@@ -27,6 +27,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import WhiskyLoader from "@/components/WhiskyLoader";
+import AiShareModal from "@/components/AiShareModal";
 
 // --- Types ---
 interface TastingRecord {
@@ -65,6 +66,15 @@ interface TasteProfile {
 }
 
 interface SuggestResponse {
+  suggestions: Suggestion[];
+  taste_profile: TasteProfile;
+}
+
+interface AiMaisterResponse {
+  personality_title: string;
+  personality_description: string;
+  strength: string;
+  next_challenge: string;
   suggestions: Suggestion[];
   taste_profile: TasteProfile;
 }
@@ -186,9 +196,10 @@ export default function MyPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [showXpDetail, setShowXpDetail] = useState(false);
-  const [suggestData, setSuggestData] = useState<SuggestResponse | null>(null);
-  const [suggestLoading, setSuggestLoading] = useState(false);
-  const [suggestError, setSuggestError] = useState("");
+  const [aiMaister, setAiMaister] = useState<AiMaisterResponse | null>(null);
+  const [aiMaisterLoading, setAiMaisterLoading] = useState(false);
+  const [aiMaisterError, setAiMaisterError] = useState("");
+  const [showAiShare, setShowAiShare] = useState(false);
   const [followingCount, setFollowingCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
   const [followListType, setFollowListType] = useState<"following" | "followers" | null>(null);
@@ -229,15 +240,7 @@ export default function MyPage() {
           shareCount: data.shareCount || 0,
         });
 
-        // Lazy-load AI analysis (non-blocking, after page renders)
-        if (data.dashboard.total >= 2) {
-          fetch("/api/dashboard/ai").then(async (r) => {
-            if (r.ok) {
-              const ai = await r.json();
-              setDashboard((prev) => prev ? { ...prev, aiAnalysis: ai } : prev);
-            }
-          }).catch(() => {});
-        }
+        // AI analysis is now triggered by user button press
       }
     } catch {
       // ignore
@@ -263,21 +266,21 @@ export default function MyPage() {
     }
   };
 
-  const fetchSuggestions = async () => {
-    setSuggestLoading(true);
-    setSuggestError("");
+  const fetchAiMaister = async () => {
+    setAiMaisterLoading(true);
+    setAiMaisterError("");
     try {
-      const response = await fetch("/api/suggest");
+      const response = await fetch("/api/ai-analysis");
       const result = await response.json();
       if (!response.ok) {
-        setSuggestError(result.error || "");
+        setAiMaisterError(result.error || "AI分析に失敗しました");
         return;
       }
-      setSuggestData(result);
+      setAiMaister(result);
     } catch {
-      setSuggestError("おすすめの取得に失敗しました");
+      setAiMaisterError("AI分析の取得に失敗しました");
     } finally {
-      setSuggestLoading(false);
+      setAiMaisterLoading(false);
     }
   };
 
@@ -755,69 +758,96 @@ export default function MyPage() {
             </div>
           )}
 
-          {/* AI Personality */}
-          {dashboard?.aiAnalysis && (
-            <div className="glass-card-gold p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-whiskey-gold" />
-                <span className="text-xs font-bold text-whiskey-gold uppercase tracking-wider">あなたのウイスキータイプ</span>
-              </div>
-              <h2 className="text-2xl font-bold text-whiskey-gold">{dashboard.aiAnalysis.personality_title}</h2>
-              <p className="text-whiskey-text text-sm leading-relaxed">{dashboard.aiAnalysis.personality_description}</p>
-              <div className="space-y-2 pt-1">
-                <div className="flex items-start gap-2">
-                  <Award size={14} className="text-whiskey-gold/70 mt-0.5 flex-shrink-0" />
-                  <p className="text-whiskey-muted text-xs">{dashboard.aiAnalysis.strength}</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Compass size={14} className="text-whiskey-gold/70 mt-0.5 flex-shrink-0" />
-                  <p className="text-whiskey-muted text-xs">{dashboard.aiAnalysis.next_challenge}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* AI Suggestions */}
+          {/* AIマイスター分析 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-whiskey-gold flex items-center gap-1.5">
                 <Sparkles size={14} />
-                AIおすすめ
+                AIマイスター分析
               </h2>
-              {suggestData && (
-                <button onClick={fetchSuggestions} disabled={suggestLoading} className="text-whiskey-muted hover:text-whiskey-gold" aria-label="更新">
-                  <RefreshCw size={14} className={suggestLoading ? "animate-spin" : ""} />
-                </button>
+              {aiMaister && (
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setShowAiShare(true)} className="text-whiskey-muted hover:text-whiskey-gold" aria-label="シェア">
+                    <Share2 size={14} />
+                  </button>
+                  <button onClick={fetchAiMaister} disabled={aiMaisterLoading} className="text-whiskey-muted hover:text-whiskey-gold" aria-label="更新">
+                    <RefreshCw size={14} className={aiMaisterLoading ? "animate-spin" : ""} />
+                  </button>
+                </div>
               )}
             </div>
-            {!suggestData && !suggestLoading && !suggestError && (
+
+            {/* Trigger Button */}
+            {!aiMaister && !aiMaisterLoading && !aiMaisterError && (
               <button
-                onClick={fetchSuggestions}
-                className="w-full glass-card-gold p-4 flex items-center justify-center gap-2 active:scale-[0.98]"
+                onClick={fetchAiMaister}
+                className="w-full glass-card-gold p-5 flex flex-col items-center gap-3 active:scale-[0.98]"
               >
-                <Sparkles size={16} className="text-whiskey-gold" />
-                <span className="text-sm font-bold text-whiskey-gold">AIにおすすめを聞く</span>
+                <div className="w-12 h-12 rounded-full bg-whiskey-gold/10 flex items-center justify-center">
+                  <Sparkles size={24} className="text-whiskey-gold" />
+                </div>
+                <div className="text-center">
+                  <span className="text-sm font-bold text-whiskey-gold block">AIマイスターに分析してもらう</span>
+                  <span className="text-xs text-whiskey-muted mt-1 block">あなたのウイスキータイプ＆おすすめを診断</span>
+                </div>
               </button>
             )}
-            {suggestLoading && !suggestData && (
-              <div className="glass-card p-6 flex flex-col items-center gap-3">
-                <Loader2 size={24} className="animate-spin text-whiskey-gold" />
-                <p className="text-whiskey-muted text-xs">AIがあなたの好みを分析中...</p>
+
+            {/* Loading */}
+            {aiMaisterLoading && !aiMaister && (
+              <div className="glass-card p-8 flex flex-col items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-whiskey-gold/10 flex items-center justify-center animate-pulse">
+                  <Sparkles size={28} className="text-whiskey-gold" />
+                </div>
+                <div className="text-center space-y-1">
+                  <Loader2 size={20} className="animate-spin text-whiskey-gold mx-auto" />
+                  <p className="text-whiskey-muted text-xs">AIマイスターがあなたの好みを分析中...</p>
+                </div>
               </div>
             )}
-            {suggestError && !suggestData && (
+
+            {/* Error */}
+            {aiMaisterError && !aiMaister && (
               <div className="glass-card p-4 text-center space-y-3">
-                <p className="text-whiskey-muted text-sm">{suggestError}</p>
+                <p className="text-whiskey-muted text-sm">{aiMaisterError}</p>
+                <button onClick={fetchAiMaister} className="text-xs text-whiskey-gold hover:underline">
+                  もう一度試す
+                </button>
               </div>
             )}
-            {suggestData && (
+
+            {/* Results */}
+            {aiMaister && (
               <>
-                {suggestData.taste_profile.tendency && (
+                {/* Personality Card */}
+                <div className="glass-card-gold p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={16} className="text-whiskey-gold" />
+                    <span className="text-xs font-bold text-whiskey-gold uppercase tracking-wider">あなたのウイスキータイプ</span>
+                  </div>
+                  <h3 className="text-2xl font-bold text-whiskey-gold">{aiMaister.personality_title}</h3>
+                  <p className="text-whiskey-text text-sm leading-relaxed">{aiMaister.personality_description}</p>
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-start gap-2">
+                      <Award size={14} className="text-whiskey-gold/70 mt-0.5 flex-shrink-0" />
+                      <p className="text-whiskey-muted text-xs">{aiMaister.strength}</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Compass size={14} className="text-whiskey-gold/70 mt-0.5 flex-shrink-0" />
+                      <p className="text-whiskey-muted text-xs">{aiMaister.next_challenge}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Taste Tendency */}
+                {aiMaister.taste_profile.tendency && (
                   <div className="glass-card-gold p-3">
-                    <p className="text-whiskey-text text-sm leading-relaxed">{suggestData.taste_profile.tendency}</p>
+                    <p className="text-whiskey-text text-sm leading-relaxed">{aiMaister.taste_profile.tendency}</p>
                   </div>
                 )}
-                {suggestData.suggestions.map((suggestion, index) => (
+
+                {/* Suggestions */}
+                {aiMaister.suggestions.map((suggestion, index) => (
                   <div key={index} className="glass-card p-4 space-y-2.5">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -834,7 +864,7 @@ export default function MyPage() {
                     {suggestion.flavor_tags.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {suggestion.flavor_tags.map((tag) => {
-                          const isMatch = suggestData.taste_profile.top_flavors.includes(tag);
+                          const isMatch = aiMaister.taste_profile.top_flavors.includes(tag);
                           return (
                             <span key={tag} className={`px-1.5 py-0.5 text-[11px] rounded-full border ${isMatch ? "bg-whiskey-gold/20 text-whiskey-gold border-whiskey-gold/40" : "bg-whiskey-gold/5 text-whiskey-muted border-whiskey-border"}`}>
                               {tag}
@@ -846,6 +876,15 @@ export default function MyPage() {
                     <p className="text-whiskey-muted text-xs leading-relaxed">{suggestion.reason}</p>
                   </div>
                 ))}
+
+                {/* Share Button */}
+                <button
+                  onClick={() => setShowAiShare(true)}
+                  className="w-full glass-card p-3 flex items-center justify-center gap-2 text-whiskey-gold text-sm font-bold active:scale-[0.98] hover:bg-whiskey-gold/5"
+                >
+                  <Share2 size={14} />
+                  分析結果をシェアする
+                </button>
               </>
             )}
           </div>
@@ -861,6 +900,19 @@ export default function MyPage() {
         <LogOut size={16} />
         ログアウト
       </button>
+
+      {/* AI Share Modal */}
+      {showAiShare && aiMaister && (
+        <AiShareModal
+          personalityTitle={aiMaister.personality_title}
+          personalityDescription={aiMaister.personality_description}
+          strength={aiMaister.strength}
+          tendency={aiMaister.taste_profile.tendency}
+          topFlavors={aiMaister.taste_profile.top_flavors}
+          displayName={displayName}
+          onClose={() => setShowAiShare(false)}
+        />
+      )}
     </div>
   );
 }
