@@ -143,8 +143,6 @@ export default function NotificationsPage() {
 
   return (
     <div className="py-4 space-y-4 animate-fadeIn">
-      <h1 className="text-xl font-bold text-whiskey-text">通知</h1>
-
       {loading && (
         <WhiskyLoader />
       )}

@@ -314,8 +314,6 @@ export default function TimelinePage() {
 
   return (
     <div className="py-4 space-y-4 animate-fadeIn">
-      <h1 className="text-xl font-bold text-whiskey-text">みんなのウイ活</h1>
-
       {/* Tab Switcher */}
       <div className="flex glass-card overflow-hidden !rounded-xl">
         <button

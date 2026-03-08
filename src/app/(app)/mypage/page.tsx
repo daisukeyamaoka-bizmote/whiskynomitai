@@ -348,8 +348,7 @@ export default function MyPage() {
   return (
     <div className="py-4 space-y-5 animate-fadeIn">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-whiskey-text">マイページ</h1>
+      <div className="flex items-center justify-end">
         {!editing && (
           <button
             onClick={() => setEditing(true)}

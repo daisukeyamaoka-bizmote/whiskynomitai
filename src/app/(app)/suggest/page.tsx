@@ -65,7 +65,6 @@ export default function SuggestPage() {
   if (loading) {
     return (
       <div className="py-4 space-y-6 animate-fadeIn">
-        <h1 className="text-xl font-bold text-whiskey-text">おすすめ</h1>
         <div className="flex flex-col items-center gap-4 py-12">
           <div className="w-16 h-16 rounded-full glass-card flex items-center justify-center animate-pulse-glow">
             <Sparkles size={28} className="text-whiskey-gold" />
@@ -82,7 +81,6 @@ export default function SuggestPage() {
   if (error) {
     return (
       <div className="py-4 space-y-6 animate-fadeIn">
-        <h1 className="text-xl font-bold text-whiskey-text">おすすめ</h1>
         <div className="flex flex-col items-center gap-4 py-12 animate-fadeInScale">
           <div className="w-20 h-20 rounded-full glass-card flex items-center justify-center animate-float">
             <Sparkles size={32} className="text-whiskey-muted" />
@@ -123,8 +121,7 @@ export default function SuggestPage() {
 
   return (
     <div className="py-4 space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-whiskey-text">おすすめ</h1>
+      <div className="flex items-center justify-end">
         <button
           onClick={fetchSuggestions}
           className="text-whiskey-muted hover:text-whiskey-gold transition-all duration-300 active:scale-75 active:rotate-180"

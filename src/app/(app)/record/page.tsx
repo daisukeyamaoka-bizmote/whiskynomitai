@@ -220,8 +220,6 @@ export default function RecordPage() {
 
   return (
     <div className="py-4 space-y-6 animate-fadeIn">
-      <h1 className="text-xl font-bold text-whiskey-text">テイスティング記録</h1>
-
       {/* Capture Step */}
       {step === "capture" && (
         <div className="flex flex-col items-center gap-6 py-8 animate-fadeInScale">
