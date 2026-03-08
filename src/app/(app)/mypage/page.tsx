@@ -588,28 +588,6 @@ export default function MyPage() {
             )}
           </div>
 
-          {/* AI Personality */}
-          {dashboard?.aiAnalysis && (
-            <div className="glass-card-gold p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-whiskey-gold" />
-                <span className="text-xs font-bold text-whiskey-gold uppercase tracking-wider">あなたのウイスキータイプ</span>
-              </div>
-              <h2 className="text-2xl font-bold text-whiskey-gold">{dashboard.aiAnalysis.personality_title}</h2>
-              <p className="text-whiskey-text text-sm leading-relaxed">{dashboard.aiAnalysis.personality_description}</p>
-              <div className="space-y-2 pt-1">
-                <div className="flex items-start gap-2">
-                  <Award size={14} className="text-whiskey-gold/70 mt-0.5 flex-shrink-0" />
-                  <p className="text-whiskey-muted text-xs">{dashboard.aiAnalysis.strength}</p>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Compass size={14} className="text-whiskey-gold/70 mt-0.5 flex-shrink-0" />
-                  <p className="text-whiskey-muted text-xs">{dashboard.aiAnalysis.next_challenge}</p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-3">
             <div className="glass-card p-3 text-center space-y-1">
@@ -774,6 +752,28 @@ export default function MyPage() {
                     <span className="text-[9px] text-whiskey-muted truncate w-full text-center">{item.month.substring(5)}月</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* AI Personality */}
+          {dashboard?.aiAnalysis && (
+            <div className="glass-card-gold p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles size={16} className="text-whiskey-gold" />
+                <span className="text-xs font-bold text-whiskey-gold uppercase tracking-wider">あなたのウイスキータイプ</span>
+              </div>
+              <h2 className="text-2xl font-bold text-whiskey-gold">{dashboard.aiAnalysis.personality_title}</h2>
+              <p className="text-whiskey-text text-sm leading-relaxed">{dashboard.aiAnalysis.personality_description}</p>
+              <div className="space-y-2 pt-1">
+                <div className="flex items-start gap-2">
+                  <Award size={14} className="text-whiskey-gold/70 mt-0.5 flex-shrink-0" />
+                  <p className="text-whiskey-muted text-xs">{dashboard.aiAnalysis.strength}</p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Compass size={14} className="text-whiskey-gold/70 mt-0.5 flex-shrink-0" />
+                  <p className="text-whiskey-muted text-xs">{dashboard.aiAnalysis.next_challenge}</p>
+                </div>
               </div>
             </div>
           )}
