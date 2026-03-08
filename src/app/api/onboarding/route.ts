@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "user",
-          content: `あなたはフレンドリーなウイスキーソムリエです。新しいお客様が以下のように自己紹介してくれました。
+          content: `あなたはフレンドリーなウイスキーアドバイザーです。新しいお客様が以下のように自己紹介してくれました。
 
 ウイスキー経験: ${answers.experience}
 好みの味わい: ${(answers.flavors || []).join("、")}

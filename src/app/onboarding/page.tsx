@@ -155,7 +155,7 @@ export default function OnboardingPage() {
                 WHISKEY NOMITAI
               </p>
               <p className="text-whiskey-muted text-sm leading-relaxed">
-                あなた専用のウイスキーソムリエAIです。
+                あなた専用のウイスキージャーナルです。
                 <br />
                 いくつか質問させてください。
                 <br />
@@ -304,7 +304,7 @@ export default function OnboardingPage() {
             </div>
             <div className="text-center space-y-2">
               <p className="text-whiskey-gold font-bold">
-                AIソムリエが分析中...
+                AIが分析中...
               </p>
               <p className="text-whiskey-muted text-sm">
                 あなたにぴったりのウイスキーを
@@ -323,7 +323,7 @@ export default function OnboardingPage() {
               <div className="flex items-center gap-2">
                 <Sparkles size={18} className="text-whiskey-gold" />
                 <p className="text-sm font-bold text-whiskey-gold">
-                  AIソムリエより
+                  AIからのメッセージ
                 </p>
               </div>
               <p className="text-whiskey-text text-sm leading-relaxed">
@@ -399,7 +399,7 @@ export default function OnboardingPage() {
                 )}
               </button>
               <p className="text-center text-xs text-whiskey-muted">
-                記録するほど、AIソムリエがあなたの好みを学習します
+                記録するほど、AIがあなたの好みを学習します
               </p>
             </div>
           </div>
