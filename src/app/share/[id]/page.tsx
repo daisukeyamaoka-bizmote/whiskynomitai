@@ -1,6 +1,6 @@
 import { Metadata } from "next";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -19,7 +19,6 @@ async function getPost(postId: string) {
 
   if (!data) return null;
 
-  // Get user name
   const { data: meta } = await supabase.rpc("get_user_profile_meta", {
     p_user_id: data.user_id,
   });
@@ -27,13 +26,19 @@ async function getPost(postId: string) {
   return {
     ...data,
     user_name: meta?.display_name || "ウイスキーファン",
-    user_handle: meta?.user_handle || "",
   };
+}
+
+async function getBaseUrl() {
+  const h = await headers();
+  const host = h.get("host") || "whiskynomitai.vercel.app";
+  const proto = h.get("x-forwarded-proto") || "https";
+  return `${proto}://${host}`;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const post = await getPost(id);
+  const [post, baseUrl] = await Promise.all([getPost(id), getBaseUrl()]);
 
   if (!post) {
     return { title: "投稿が見つかりません - ウイスキーノミタイ" };
@@ -63,6 +68,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     user: post.user_name || "",
   });
 
+  const ogImageUrl = `${baseUrl}/api/og?${ogParams.toString()}`;
+
   return {
     title,
     description,
@@ -70,20 +77,45 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       type: "article",
-      images: [`/api/og?${ogParams.toString()}`],
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [`/api/og?${ogParams.toString()}`],
+      images: [ogImageUrl],
     },
   };
 }
 
 export default async function SharePage({ params }: Props) {
   const { id } = await params;
-  // Redirect to main app — the OGP metadata is served for crawlers,
-  // but real users get sent to the timeline
-  redirect(`/?post=${id}`);
+  const redirectUrl = `/?post=${id}`;
+
+  // Render HTML with meta tags for crawlers, then JS redirect for real users
+  return (
+    <html lang="ja">
+      <head>
+        <meta httpEquiv="refresh" content={`0;url=${redirectUrl}`} />
+      </head>
+      <body
+        style={{
+          background: "#0f0d0a",
+          color: "#d4af37",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          fontFamily: "sans-serif",
+        }}
+      >
+        <p>リダイレクト中...</p>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.location.replace("${redirectUrl}");`,
+          }}
+        />
+      </body>
+    </html>
+  );
 }
