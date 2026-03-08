@@ -383,7 +383,36 @@ export default function UserProfilePage() {
 
   if (loading) {
     return (
-      <WhiskyLoader />
+      <div className="py-4 space-y-5 animate-fadeIn">
+        <div className="flex items-center gap-4 p-4">
+          <div className="w-20 h-20 rounded-full shimmer" />
+          <div className="flex-1 space-y-2">
+            <div className="h-5 shimmer rounded w-1/3" />
+            <div className="h-3 shimmer rounded w-1/2" />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass-card p-3 space-y-2">
+              <div className="h-6 shimmer rounded w-1/2 mx-auto" />
+              <div className="h-3 shimmer rounded w-2/3 mx-auto" />
+            </div>
+          ))}
+        </div>
+        <div className="space-y-2">
+          {[1, 2].map((i) => (
+            <div key={i} className="glass-card p-3">
+              <div className="flex gap-3">
+                <div className="w-12 h-12 rounded-xl shimmer" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 shimmer rounded w-3/4" />
+                  <div className="h-3 shimmer rounded w-1/2" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 

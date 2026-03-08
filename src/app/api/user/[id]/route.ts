@@ -17,26 +17,21 @@ export async function GET(
 
     const { id: targetUserId } = await params;
 
-    // Fetch target user's full profile metadata
-    const { data: profileMeta } = await supabase.rpc("get_user_profile_meta", {
-      p_user_id: targetUserId,
-    });
-    const displayName = profileMeta?.display_name || "ウイスキーファン";
-    const userHandle = profileMeta?.user_handle || "";
-    const avatarUrl = profileMeta?.avatar_url || "";
-    const bio = profileMeta?.bio || "";
-    const website = profileMeta?.website || "";
-    const twitter = profileMeta?.twitter || "";
-    const instagram = profileMeta?.instagram || "";
-
-    // Fetch follow counts, follow status, and posts in parallel
+    // Fetch ALL data in a single parallel batch (profile + counts + posts + my posts)
     const [
+      profileResult,
       followingCountResult,
       followerCountResult,
       isFollowingResult,
       postsResult,
       recordCountResult,
+      myPostsResult,
     ] = await Promise.all([
+      supabase
+        .from("user_profiles")
+        .select("display_name, user_handle, avatar_url, bio, website, twitter, instagram")
+        .eq("id", targetUserId)
+        .single(),
       supabase
         .from("user_follows")
         .select("id", { count: "exact", head: true })
@@ -66,7 +61,21 @@ export async function GET(
         .from("tasting_records")
         .select("id", { count: "exact", head: true })
         .eq("user_id", targetUserId),
+      supabase
+        .from("timeline_posts")
+        .select("whiskey_flavor_tags, whiskey_region, whiskey_type, whiskey_rating")
+        .eq("user_id", user.id)
+        .limit(50),
     ]);
+
+    const profileMeta = profileResult.data;
+    const displayName = profileMeta?.display_name || "ウイスキーファン";
+    const userHandle = profileMeta?.user_handle || "";
+    const avatarUrl = profileMeta?.avatar_url || "";
+    const bio = profileMeta?.bio || "";
+    const website = profileMeta?.website || "";
+    const twitter = profileMeta?.twitter || "";
+    const instagram = profileMeta?.instagram || "";
 
     // Build taste profile from target user's posts
     const targetPosts = postsResult.data || [];
@@ -111,19 +120,11 @@ export async function GET(
     };
 
     const targetTaste = buildTasteProfile(targetPosts);
-
-    // Fetch current user's posts for compatibility calculation
-    const { data: myPosts } = await supabase
-      .from("timeline_posts")
-      .select("whiskey_flavor_tags, whiskey_region, whiskey_type, whiskey_rating")
-      .eq("user_id", user.id)
-      .limit(50);
-
-    const myTaste = buildTasteProfile(myPosts || []);
+    const myTaste = buildTasteProfile(myPostsResult.data || []);
 
     // Calculate compatibility score (0-100)
     const calcCompatibility = () => {
-      if (targetTaste.total_records === 0 || (myPosts || []).length === 0) return null;
+      if (targetTaste.total_records === 0 || (myPostsResult.data || []).length === 0) return null;
 
       // Jaccard-like similarity for flavors, regions, types
       const setOverlap = (a: string[], b: string[]) => {
@@ -242,6 +243,8 @@ export async function GET(
       },
       compatibility,
       posts,
+    }, {
+      headers: { "Cache-Control": "private, max-age=0, stale-while-revalidate=30" },
     });
   } catch (error) {
     console.error("User profile error:", error);

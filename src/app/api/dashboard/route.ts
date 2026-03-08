@@ -149,17 +149,20 @@ export async function GET() {
       }));
 
     // Return stats immediately — no AI call here
-    return NextResponse.json({
-      total: typedRecords.length,
-      avgRating,
-      ratingDistribution,
-      topFlavors,
-      regionBreakdown,
-      typeBreakdown,
-      favorites,
-      ratingTrend,
-      aiAnalysis: null,
-    });
+    return NextResponse.json(
+      {
+        total: typedRecords.length,
+        avgRating,
+        ratingDistribution,
+        topFlavors,
+        regionBreakdown,
+        typeBreakdown,
+        favorites,
+        ratingTrend,
+        aiAnalysis: null,
+      },
+      { headers: { "Cache-Control": "private, max-age=0, stale-while-revalidate=60" } }
+    );
   } catch (error) {
     console.error("Dashboard error:", error);
     return NextResponse.json(

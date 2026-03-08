@@ -75,7 +75,9 @@ ${JSON.stringify(summary)}
     if (jsonMatch) {
       const aiAnalysis = JSON.parse(jsonMatch[0]);
       await logAiUsage(supabase, user.id, "dashboard");
-      return NextResponse.json(aiAnalysis);
+      return NextResponse.json(aiAnalysis, {
+        headers: { "Cache-Control": "private, max-age=300, stale-while-revalidate=600" },
+      });
     }
 
     return NextResponse.json({ error: "AI分析に失敗しました" }, { status: 500 });

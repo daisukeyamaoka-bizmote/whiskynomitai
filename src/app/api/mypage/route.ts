@@ -12,22 +12,16 @@ export async function GET() {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
-    // Single auth call, then all DB queries in parallel
-    const [recordsResult, recentResult, prefsResult, sharesResult, followingResult, followerResult] = await Promise.all([
+    // Single auth call, then all DB queries in parallel (removed duplicate records query)
+    const [recordsResult, prefsResult, sharesResult, followingResult, followerResult] = await Promise.all([
       supabase
         .from("tasting_records")
-        .select("name, distillery, region, type, flavor_tags, rating, note, created_at")
+        .select("id, name, distillery, region, type, flavor_tags, rating, note, photo_url, created_at")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("tasting_records")
-        .select("id, name, region, type, rating, photo_url, flavor_tags, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(3),
+        .order("created_at", { ascending: false }),
       supabase
         .from("user_preferences")
-        .select("*")
+        .select("top_flavors, top_regions, preferred_types, avg_rating, total_tastings")
         .eq("user_id", user.id)
         .single(),
       supabase
@@ -58,35 +52,52 @@ export async function GET() {
       instagram: user.user_metadata?.instagram || "",
     };
 
-    // Compute dashboard stats from records
+    // Compute dashboard stats from records (single-pass aggregation)
     const records = recordsResult.data || [];
+    // Records are ordered desc, so recent records are first
+    const recentRecordsData = records.slice(0, 3);
     let dashboard = null;
 
     if (records.length > 0) {
       const ratingDistribution: Record<number, number> = {};
       for (let i = 1; i <= 10; i++) ratingDistribution[i] = 0;
-      records.forEach((r) => ratingDistribution[r.rating]++);
 
       const flavorCount: Record<string, number> = {};
-      records.forEach((r) =>
-        (r.flavor_tags || []).forEach((tag: string) => {
+      const regionCountMap: Record<string, number> = {};
+      const regionRating: Record<string, number[]> = {};
+      const typeCountMap: Record<string, number> = {};
+      const typeRating: Record<string, number[]> = {};
+      const monthlyRatings: Record<string, number[]> = {};
+      let ratingSum = 0;
+
+      // Single pass over all records
+      for (const r of records) {
+        ratingDistribution[r.rating]++;
+        ratingSum += r.rating;
+
+        for (const tag of (r.flavor_tags || [])) {
           flavorCount[tag] = (flavorCount[tag] || 0) + 1;
-        })
-      );
+        }
+
+        if (r.region) {
+          regionCountMap[r.region] = (regionCountMap[r.region] || 0) + 1;
+          (regionRating[r.region] ??= []).push(r.rating);
+        }
+
+        if (r.type) {
+          typeCountMap[r.type] = (typeCountMap[r.type] || 0) + 1;
+          (typeRating[r.type] ??= []).push(r.rating);
+        }
+
+        const month = r.created_at.substring(0, 7);
+        (monthlyRatings[month] ??= []).push(r.rating);
+      }
+
       const topFlavors = Object.entries(flavorCount)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 8)
         .map(([name, count]) => ({ name, count }));
 
-      const regionCountMap: Record<string, number> = {};
-      const regionRating: Record<string, number[]> = {};
-      records.forEach((r) => {
-        if (r.region) {
-          regionCountMap[r.region] = (regionCountMap[r.region] || 0) + 1;
-          if (!regionRating[r.region]) regionRating[r.region] = [];
-          regionRating[r.region].push(r.rating);
-        }
-      });
       const regionBreakdown = Object.entries(regionCountMap)
         .sort((a, b) => b[1] - a[1])
         .map(([name, count]) => ({
@@ -95,15 +106,6 @@ export async function GET() {
           avgRating: Math.round((regionRating[name].reduce((a, b) => a + b, 0) / regionRating[name].length) * 10) / 10,
         }));
 
-      const typeCountMap: Record<string, number> = {};
-      const typeRating: Record<string, number[]> = {};
-      records.forEach((r) => {
-        if (r.type) {
-          typeCountMap[r.type] = (typeCountMap[r.type] || 0) + 1;
-          if (!typeRating[r.type]) typeRating[r.type] = [];
-          typeRating[r.type].push(r.rating);
-        }
-      });
       const typeBreakdown = Object.entries(typeCountMap)
         .sort((a, b) => b[1] - a[1])
         .map(([name, count]) => ({
@@ -112,20 +114,15 @@ export async function GET() {
           avgRating: Math.round((typeRating[name].reduce((a, b) => a + b, 0) / typeRating[name].length) * 10) / 10,
         }));
 
+      // Records already sorted desc by created_at
       const favorites = records
         .filter((r) => r.rating >= 7)
         .sort((a, b) => b.rating - a.rating)
         .slice(0, 5)
         .map((r) => ({ name: r.name, rating: r.rating, type: r.type, region: r.region }));
 
-      const avgRating = Math.round((records.reduce((sum, r) => sum + r.rating, 0) / records.length) * 10) / 10;
+      const avgRating = Math.round((ratingSum / records.length) * 10) / 10;
 
-      const monthlyRatings: Record<string, number[]> = {};
-      records.forEach((r) => {
-        const month = r.created_at.substring(0, 7);
-        if (!monthlyRatings[month]) monthlyRatings[month] = [];
-        monthlyRatings[month].push(r.rating);
-      });
       const ratingTrend = Object.entries(monthlyRatings)
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([month, ratings]) => ({
@@ -156,15 +153,18 @@ export async function GET() {
       total_tastings: 0,
     };
 
-    return NextResponse.json({
-      profile,
-      dashboard,
-      recentRecords: recentResult.data || [],
-      preferences,
-      shareCount: sharesResult.count || 0,
-      followingCount: followingResult.count || 0,
-      followerCount: followerResult.count || 0,
-    });
+    return NextResponse.json(
+      {
+        profile,
+        dashboard,
+        recentRecords: recentRecordsData,
+        preferences,
+        shareCount: sharesResult.count || 0,
+        followingCount: followingResult.count || 0,
+        followerCount: followerResult.count || 0,
+      },
+      { headers: { "Cache-Control": "private, max-age=0, stale-while-revalidate=30" } }
+    );
   } catch (error) {
     console.error("MyPage error:", error);
     return NextResponse.json(
