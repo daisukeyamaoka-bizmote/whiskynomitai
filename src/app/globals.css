@@ -12,6 +12,10 @@
   --font-sans: "Noto Sans JP", sans-serif;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--color-whiskey-bg);
   color: var(--color-whiskey-text);
@@ -19,6 +23,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 ::-webkit-scrollbar { width: 4px; }
@@ -136,27 +141,72 @@ input[type="number"] { -moz-appearance: textfield; }
   50% { transform: translate3d(0, -6px, 0); }
 }
 
-/* --- Instant animations --- */
-.animate-fadeIn { animation: fadeIn 0.15s ease-out both; }
-.animate-fadeInUp { animation: fadeInUp 0.18s ease-out both; }
-.animate-fadeInScale { animation: fadeInScale 0.15s ease-out both; }
-.animate-slideUp { animation: slideUp 0.2s ease-out both; }
-.animate-slideDown { animation: slideDown 0.12s ease-out both; }
+@keyframes navBounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1.1) translateY(-2px); }
+}
+@keyframes heartPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+  30% { transform: translate(-50%, -50%) scale(0.95); }
+  45% { transform: translate(-50%, -50%) scale(1.1); }
+  80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+}
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+@keyframes imgFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* --- Smooth animations (Instagram-like) --- */
+.animate-fadeIn { animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.animate-fadeInUp { animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.animate-fadeInScale { animation: fadeInScale 0.25s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.animate-slideUp { animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) both; }
+.animate-slideDown { animation: slideDown 0.2s cubic-bezier(0.4, 0, 0.2, 1) both; }
 .animate-pulse-glow { animation: pulseGlow 3s ease-in-out infinite; }
 .animate-float { animation: float 4s ease-in-out infinite; }
+.animate-nav-bounce { animation: navBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-heart-pop { animation: heartPop 0.8s cubic-bezier(0.4, 0, 0.2, 1) both; }
 
-/* Staggered children — near-instant cascade */
-.stagger-children > * { animation: fadeInUp 0.18s ease-out both; }
+/* Skeleton loading for images */
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
+  background-size: 200% auto;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+.img-loaded {
+  animation: imgFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* Heart pop overlay */
+.heart-pop-overlay {
+  position: absolute;
+  top: 50%; left: 50%;
+  pointer-events: none;
+  z-index: 10;
+  color: var(--color-whiskey-gold);
+  filter: drop-shadow(0 2px 8px rgba(228, 184, 74, 0.4));
+}
+
+/* Staggered children — smooth cascade */
+.stagger-children > * { animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-children > *:nth-child(2) { animation-delay: 25ms; }
-.stagger-children > *:nth-child(3) { animation-delay: 50ms; }
-.stagger-children > *:nth-child(4) { animation-delay: 75ms; }
-.stagger-children > *:nth-child(5) { animation-delay: 100ms; }
-.stagger-children > *:nth-child(6) { animation-delay: 125ms; }
-.stagger-children > *:nth-child(7) { animation-delay: 150ms; }
-.stagger-children > *:nth-child(8) { animation-delay: 175ms; }
-.stagger-children > *:nth-child(9) { animation-delay: 200ms; }
-.stagger-children > *:nth-child(10) { animation-delay: 225ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 40ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 80ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 160ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 280ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 320ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 360ms; }
 
 /* --- Glass Card --- */
 .glass-card {
@@ -169,7 +219,7 @@ input[type="number"] { -moz-appearance: textfield; }
   position: relative;
   overflow: hidden;
   will-change: transform;
-  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card::before {
@@ -186,7 +236,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .glass-card:active {
   transform: scale(0.985);
-  transition-duration: 60ms;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* --- Gold Glass Card --- */
@@ -200,7 +250,7 @@ input[type="number"] { -moz-appearance: textfield; }
   position: relative;
   overflow: hidden;
   will-change: transform;
-  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card-gold::before {
@@ -217,7 +267,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .glass-card-gold:active {
   transform: scale(0.985);
-  transition-duration: 60ms;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* --- Navigation --- */
@@ -243,7 +293,7 @@ input[type="number"] { -moz-appearance: textfield; }
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 14px;
   box-shadow: 0 4px 16px rgba(228,184,74,0.25), inset 0 1px 0 rgba(255,255,255,0.2);
-  transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
 }
@@ -262,7 +312,7 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .glass-button:active {
   transform: scale(0.97);
-  transition-duration: 60ms;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* --- Input --- */
@@ -305,12 +355,18 @@ input[type="number"] { -moz-appearance: textfield; }
   -webkit-backdrop-filter: blur(16px);
 }
 
-/* --- Global --- */
+/* --- Global transitions --- */
 a, button, input, select, textarea {
-  transition-timing-function: ease-out;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 0.2s;
 }
 .tab-indicator {
-  transition: all 0.12s ease-out;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Momentum scrolling for all scrollable areas */
+.overflow-y-auto, .overflow-y-scroll, .overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
 }
 
 .shimmer {

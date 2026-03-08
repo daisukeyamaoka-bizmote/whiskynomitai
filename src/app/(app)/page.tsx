@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   MessageCircle,
   Loader2,
@@ -442,6 +442,19 @@ function PostCard({
   formatTime: (d: string) => string;
 }) {
   const record = post.tasting_records;
+  const [showHeart, setShowHeart] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const lastTapRef = useRef(0);
+
+  const handleDoubleTap = () => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      if (!post.is_liked) onNomitai();
+      setShowHeart(true);
+      setTimeout(() => setShowHeart(false), 800);
+    }
+    lastTapRef.current = now;
+  };
 
   return (
     <div className="glass-card overflow-hidden">
@@ -464,16 +477,24 @@ function PostCard({
         </Link>
       </div>
 
-      {/* Photo */}
+      {/* Photo with double-tap heart */}
       {record?.photo_url && (
-        <div className="aspect-[4/3]">
+        <div className="aspect-[4/3] relative" onClick={handleDoubleTap}>
+          {!imgLoaded && <div className="absolute inset-0 skeleton" />}
           <Image
             src={record.photo_url}
             alt={record.name || ""}
             width={480}
             height={360}
-            className="w-full h-full object-cover"
+            loading="lazy"
+            className={`w-full h-full object-cover ${imgLoaded ? "img-loaded" : "opacity-0"}`}
+            onLoad={() => setImgLoaded(true)}
           />
+          {showHeart && (
+            <div className="heart-pop-overlay animate-heart-pop">
+              <GlassWater size={64} fill="currentColor" />
+            </div>
+          )}
         </div>
       )}
 
