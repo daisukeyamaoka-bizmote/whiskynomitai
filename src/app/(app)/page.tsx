@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Camera, Wine, Star, MapPin, Loader2 } from "lucide-react";
+import { Camera, Wine, Star, MapPin, Loader2, Trophy } from "lucide-react";
 import Image from "next/image";
 
 interface TastingRecord {
@@ -12,6 +12,7 @@ interface TastingRecord {
   type: string | null;
   rating: number;
   photo_url: string | null;
+  flavor_tags: string[];
   created_at: string;
 }
 
@@ -27,6 +28,57 @@ interface Stats {
   total: number;
   avgRating: number;
   uniqueRegions: number;
+  uniqueTypes: number;
+  uniqueFlavors: number;
+  highRatedCount: number;
+}
+
+// --- Level System ---
+const LEVEL_DEFS = [
+  { level: 1, title: "ビギナー", minXp: 0 },
+  { level: 2, title: "テイスター", minXp: 30 },
+  { level: 3, title: "愛好家", minXp: 80 },
+  { level: 4, title: "探究者", minXp: 160 },
+  { level: 5, title: "ウイスキー通", minXp: 300 },
+  { level: 6, title: "コニサー", minXp: 500 },
+  { level: 7, title: "ソムリエ", minXp: 800 },
+  { level: 8, title: "マスター", minXp: 1200 },
+  { level: 9, title: "グランドマスター", minXp: 1800 },
+  { level: 10, title: "レジェンド", minXp: 2500 },
+];
+
+function calcXp(stats: Stats): number {
+  let xp = 0;
+  xp += stats.total * 10;           // 1記録 = 10XP
+  xp += stats.uniqueRegions * 20;   // 新しい産地 = 20XP
+  xp += stats.uniqueTypes * 20;     // 新しいタイプ = 20XP
+  xp += stats.uniqueFlavors * 5;    // フレーバー多様性 = 5XP
+  xp += stats.highRatedCount * 5;   // 高評価(8+) = +5XP
+  return xp;
+}
+
+function getLevel(xp: number) {
+  let current = LEVEL_DEFS[0];
+  for (const def of LEVEL_DEFS) {
+    if (xp >= def.minXp) current = def;
+    else break;
+  }
+  const nextIdx = LEVEL_DEFS.findIndex((d) => d.level === current.level) + 1;
+  const next = nextIdx < LEVEL_DEFS.length ? LEVEL_DEFS[nextIdx] : null;
+  const progressToNext = next
+    ? ((xp - current.minXp) / (next.minXp - current.minXp)) * 100
+    : 100;
+  return { ...current, xp, next, progressToNext: Math.min(progressToNext, 100) };
+}
+
+function getXpBreakdown(stats: Stats) {
+  return [
+    { label: "記録", value: stats.total * 10, detail: `${stats.total}本 × 10` },
+    { label: "産地", value: stats.uniqueRegions * 20, detail: `${stats.uniqueRegions}種 × 20` },
+    { label: "タイプ", value: stats.uniqueTypes * 20, detail: `${stats.uniqueTypes}種 × 20` },
+    { label: "フレーバー", value: stats.uniqueFlavors * 5, detail: `${stats.uniqueFlavors}種 × 5` },
+    { label: "高評価", value: stats.highRatedCount * 5, detail: `${stats.highRatedCount}本 × 5` },
+  ];
 }
 
 export default function HomePage() {
@@ -36,8 +88,12 @@ export default function HomePage() {
     total: 0,
     avgRating: 0,
     uniqueRegions: 0,
+    uniqueTypes: 0,
+    uniqueFlavors: 0,
+    highRatedCount: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [showXpDetail, setShowXpDetail] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -58,22 +114,29 @@ export default function HomePage() {
         const allRes = await fetch("/api/records?limit=1000&page=1");
         if (allRes.ok) {
           const allData = await allRes.json();
-          const records = allData.records || [];
+          const records: TastingRecord[] = allData.records || [];
           const regions = new Set(
-            records.map((r: TastingRecord) => r.region).filter(Boolean)
+            records.map((r) => r.region).filter(Boolean)
           );
+          const types = new Set(
+            records.map((r) => r.type).filter(Boolean)
+          );
+          const flavors = new Set(
+            records.flatMap((r) => r.flavor_tags || [])
+          );
+          const highRated = records.filter((r) => r.rating >= 8).length;
           const avgR =
             records.length > 0
-              ? records.reduce(
-                  (sum: number, r: TastingRecord) => sum + r.rating,
-                  0
-                ) / records.length
+              ? records.reduce((sum, r) => sum + r.rating, 0) / records.length
               : 0;
 
           setStats({
             total: allData.total || records.length,
             avgRating: Math.round(avgR * 10) / 10,
             uniqueRegions: regions.size,
+            uniqueTypes: types.size,
+            uniqueFlavors: flavors.size,
+            highRatedCount: highRated,
           });
         }
       }
@@ -96,6 +159,10 @@ export default function HomePage() {
       </div>
     );
   }
+
+  const xp = calcXp(stats);
+  const level = getLevel(xp);
+  const xpBreakdown = getXpBreakdown(stats);
 
   return (
     <div className="py-4 space-y-6">
@@ -125,6 +192,82 @@ export default function HomePage() {
         </div>
       ) : (
         <>
+          {/* Level Card */}
+          <div
+            className="bg-gradient-to-br from-whiskey-card to-whiskey-bg border border-whiskey-border rounded-xl p-4 space-y-3 cursor-pointer"
+            onClick={() => setShowXpDetail(!showXpDetail)}
+          >
+            <div className="flex items-center gap-4">
+              {/* Level Badge */}
+              <div className="relative flex-shrink-0">
+                <div className="w-16 h-16 rounded-full border-[3px] border-whiskey-gold flex items-center justify-center bg-whiskey-gold/10">
+                  <div className="text-center">
+                    <p className="text-whiskey-gold font-bold text-xs leading-none">Lv.</p>
+                    <p className="text-whiskey-gold font-bold text-xl leading-none">
+                      {level.level}
+                    </p>
+                  </div>
+                </div>
+                {/* Small trophy for high levels */}
+                {level.level >= 5 && (
+                  <div className="absolute -top-1 -right-1 w-6 h-6 bg-whiskey-gold rounded-full flex items-center justify-center">
+                    <Trophy size={12} className="text-whiskey-bg" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <p className="text-whiskey-gold font-bold text-lg">
+                  {level.title}
+                </p>
+                <p className="text-whiskey-muted text-xs">
+                  {xp} XP
+                  {level.next && ` / 次のレベルまで ${level.next.minXp - xp} XP`}
+                </p>
+
+                {/* XP Progress Bar */}
+                <div className="mt-2 h-2 bg-whiskey-bg rounded-full overflow-hidden border border-whiskey-border">
+                  <div
+                    className="h-full bg-gradient-to-r from-whiskey-gold/70 to-whiskey-gold rounded-full transition-all duration-700"
+                    style={{ width: `${level.progressToNext}%` }}
+                  />
+                </div>
+                {level.next && (
+                  <p className="text-[10px] text-whiskey-muted mt-1">
+                    次: Lv.{level.next.level} {level.next.title}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* XP Breakdown (toggle) */}
+            {showXpDetail && (
+              <div className="pt-2 border-t border-whiskey-border space-y-1.5">
+                <p className="text-xs text-whiskey-muted font-bold">XP内訳</p>
+                {xpBreakdown.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between text-xs"
+                  >
+                    <span className="text-whiskey-muted">{item.label}</span>
+                    <span className="text-whiskey-text">
+                      <span className="text-whiskey-muted mr-2">
+                        {item.detail}
+                      </span>
+                      <span className="text-whiskey-gold font-bold">
+                        +{item.value}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between text-xs pt-1 border-t border-whiskey-border/50">
+                  <span className="text-whiskey-muted font-bold">合計</span>
+                  <span className="text-whiskey-gold font-bold">{xp} XP</span>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* CTA Banner */}
           <Link
             href="/record"
