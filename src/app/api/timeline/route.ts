@@ -82,9 +82,9 @@ export async function GET(request: NextRequest) {
       likedPostIds = new Set((userLikes || []).map((l) => l.post_id));
     }
 
-    // Check bookmarks and follows in parallel
+    // Check bookmarks, follows, and names in parallel
     const userIds = [...new Set((posts || []).map((p) => p.user_id))];
-    const [followResult, bookmarkResult, nameResults] = await Promise.all([
+    const [followResult, bookmarkResult, ...nameResults] = await Promise.all([
       userIds.length > 0
         ? supabase
             .from("user_follows")
@@ -99,16 +99,11 @@ export async function GET(request: NextRequest) {
             .eq("user_id", user.id)
             .in("post_id", postIds)
         : Promise.resolve({ data: [] }),
-      // Fetch display names for post authors
-      supabase.rpc("get_user_display_name", { p_user_id: user.id }).then(() =>
-        // Get names for all unique user IDs
-        Promise.all(
-          userIds.map(async (uid) => {
-            const { data } = await supabase.rpc("get_user_display_name", { p_user_id: uid });
-            return { id: uid, name: data || "ウイスキーファン" };
-          })
-        )
-      ),
+      // Fetch display names in parallel (all at once)
+      ...userIds.map(async (uid) => {
+        const { data } = await supabase.rpc("get_user_display_name", { p_user_id: uid });
+        return { id: uid, name: data || "ウイスキーファン" };
+      }),
     ]);
 
     const followingSet = new Set((followResult.data || []).map((f: { following_id: string }) => f.following_id));

@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { User, Camera, LayoutGrid, Newspaper } from "lucide-react";
+import { User, Camera, LayoutGrid, Newspaper, Bell } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "マイページ", icon: User },
-  { href: "/timeline", label: "みんなのウイ活", icon: Newspaper },
+  { href: "/", label: "ウイ活", icon: Newspaper },
   { href: "/record", label: "記録", icon: Camera },
+  { href: "/notifications", label: "通知", icon: Bell },
   { href: "/collection", label: "コレクション", icon: LayoutGrid },
+  { href: "/mypage", label: "マイページ", icon: User },
 ];
 
 export default function BottomNav() {
@@ -19,7 +20,9 @@ export default function BottomNav() {
       <div className="max-w-[480px] mx-auto flex">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive =
-            href === "/" ? pathname === "/" : pathname.startsWith(href);
+            href === "/"
+              ? pathname === "/" || pathname === "/timeline"
+              : pathname.startsWith(href);
           return (
             <Link
               key={href}

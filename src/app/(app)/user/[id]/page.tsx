@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Loader2,
   UserPlus,
@@ -64,6 +65,11 @@ interface UserProfile {
   posts: TimelinePost[];
 }
 
+interface FollowUser {
+  id: string;
+  display_name: string;
+}
+
 export default function UserProfilePage() {
   const params = useParams();
   const router = useRouter();
@@ -77,6 +83,9 @@ export default function UserProfilePage() {
   const [commentText, setCommentText] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [followListType, setFollowListType] = useState<"following" | "followers" | null>(null);
+  const [followList, setFollowList] = useState<FollowUser[]>([]);
+  const [followListLoading, setFollowListLoading] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -85,7 +94,7 @@ export default function UserProfilePage() {
         const data = await res.json();
         // If it's own profile, redirect to MyPage
         if (data.is_own) {
-          router.replace("/");
+          router.replace("/mypage");
           return;
         }
         setProfile(data);
@@ -158,6 +167,23 @@ export default function UserProfilePage() {
       );
     } finally {
       setFollowLoading(false);
+    }
+  };
+
+  const openFollowList = async (type: "following" | "followers") => {
+    setFollowListType(type);
+    setFollowList([]);
+    setFollowListLoading(true);
+    try {
+      const res = await fetch(`/api/follow-list?type=${type}&user_id=${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFollowList(data.users || []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setFollowListLoading(false);
     }
   };
 
@@ -388,20 +414,20 @@ export default function UserProfilePage() {
             {profile.display_name}
           </h1>
 
-          {/* Follow/Follower Counts */}
+          {/* Follow/Follower Counts - clickable */}
           <div className="flex items-center gap-6">
-            <div className="text-center">
+            <button onClick={() => openFollowList("following")} className="text-center active:opacity-70">
               <p className="text-base font-bold text-whiskey-text">
                 {profile.following_count}
               </p>
               <p className="text-xs text-whiskey-muted">フォロー</p>
-            </div>
-            <div className="text-center">
+            </button>
+            <button onClick={() => openFollowList("followers")} className="text-center active:opacity-70">
               <p className="text-base font-bold text-whiskey-text">
                 {profile.follower_count}
               </p>
               <p className="text-xs text-whiskey-muted">フォロワー</p>
-            </div>
+            </button>
             <div className="text-center">
               <p className="text-base font-bold text-whiskey-text">
                 {profile.record_count}
@@ -586,6 +612,52 @@ export default function UserProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Follow List Modal */}
+      {followListType && (
+        <div className="fixed inset-0 glass-overlay z-50 flex items-end justify-center animate-fadeIn">
+          <div className="w-full max-w-[480px] glass-card !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
+            <div className="flex items-center justify-between p-4 border-b border-whiskey-border/50">
+              <h3 className="text-sm font-bold text-whiskey-text">
+                {followListType === "following" ? "フォロー中" : "フォロワー"}
+              </h3>
+              <button
+                onClick={() => setFollowListType(null)}
+                className="text-whiskey-muted hover:text-whiskey-text transition-all duration-200 hover:scale-110 active:scale-90"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {followListLoading && (
+                <div className="flex justify-center py-8">
+                  <Loader2 size={20} className="animate-spin text-whiskey-gold" />
+                </div>
+              )}
+              {!followListLoading && followList.length === 0 && (
+                <p className="text-whiskey-muted text-sm text-center py-8">
+                  {followListType === "following" ? "まだ誰もフォローしていません" : "まだフォロワーがいません"}
+                </p>
+              )}
+              {followList.map((user) => (
+                <Link
+                  key={user.id}
+                  href={`/user/${user.id}`}
+                  onClick={() => setFollowListType(null)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-whiskey-gold/5 transition-colors active:opacity-70"
+                >
+                  <div className="w-10 h-10 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center flex-shrink-0">
+                    <span className="text-whiskey-gold text-sm font-bold">
+                      {user.display_name.charAt(0)}
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-whiskey-text">{user.display_name}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Comment Modal */}
       {commentPostId && (
