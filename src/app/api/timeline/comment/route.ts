@@ -83,12 +83,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const trimmedContent = content.trim().slice(0, 500);
+
     const { data: comment, error } = await supabase
       .from("timeline_comments")
       .insert({
         user_id: user.id,
         post_id,
-        content: content.trim(),
+        content: trimmedContent,
       })
       .select()
       .single();

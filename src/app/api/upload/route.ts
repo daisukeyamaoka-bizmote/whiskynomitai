@@ -33,7 +33,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const fileExt = file.name.split(".").pop();
+    // Validate file type: images only
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { error: "画像ファイル（JPEG, PNG, WebP, HEIC）のみアップロードできます" },
+        { status: 400 }
+      );
+    }
+
+    const allowedExts = ["jpg", "jpeg", "png", "webp", "heic", "heif"];
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
+    if (!fileExt || !allowedExts.includes(fileExt)) {
+      return NextResponse.json(
+        { error: "許可されていないファイル形式です" },
+        { status: 400 }
+      );
+    }
+
     const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
@@ -42,12 +59,7 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error("Upload error:", uploadError);
-      let errorMsg = "アップロードに失敗しました";
-      if (uploadError.message?.includes("not found") || uploadError.message?.includes("Bucket")) {
-        errorMsg = "ストレージバケット「whiskey-photos」が存在しません。Supabaseで作成してください。";
-      } else if (uploadError.message) {
-        errorMsg += `: ${uploadError.message}`;
-      }
+      const errorMsg = "アップロードに失敗しました";
       return NextResponse.json(
         { error: errorMsg },
         { status: 500 }

@@ -20,13 +20,14 @@ async function getPost(postId: string) {
 
   if (!data) return null;
 
-  const { data: meta } = await supabase.rpc("get_user_profile_meta", {
+  // Use public-safe RPC that only returns display name (no PII)
+  const { data: displayName } = await supabase.rpc("get_user_display_name_public", {
     p_user_id: data.user_id,
   });
 
   return {
     ...data,
-    user_name: meta?.display_name || "ウイスキーファン",
+    user_name: displayName || "ウイスキーファン",
   };
 }
 
