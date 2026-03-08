@@ -25,6 +25,7 @@ import {
   Target,
   BarChart3,
   TrendingUp,
+  Link as LinkIcon,
 } from "lucide-react";
 
 interface TastingRecord {
@@ -74,6 +75,10 @@ interface UserProfile {
   id: string;
   display_name: string;
   avatar_url: string;
+  bio: string;
+  website: string;
+  twitter: string;
+  instagram: string;
   is_own: boolean;
   is_following: boolean;
   following_count: number;
@@ -420,7 +425,17 @@ export default function UserProfilePage() {
               </span>
             )}
           </div>
-          <h1 className="text-lg font-bold text-whiskey-text">{profile.display_name}</h1>
+          <div>
+            <h1 className="text-lg font-bold text-whiskey-text">{profile.display_name}</h1>
+            {profile.bio && <p className="text-xs text-whiskey-text/80 mt-1 line-clamp-2">{profile.bio}</p>}
+            {(profile.website || profile.twitter || profile.instagram) && (
+              <div className="flex items-center justify-center gap-3 mt-2">
+                {profile.website && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="text-whiskey-gold/60 hover:text-whiskey-gold"><LinkIcon size={14} /></a>}
+                {profile.twitter && <a href={`https://x.com/${profile.twitter.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-whiskey-gold/60 hover:text-whiskey-gold text-xs font-bold">𝕏</a>}
+                {profile.instagram && <a href={`https://instagram.com/${profile.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer" className="text-whiskey-gold/60 hover:text-whiskey-gold text-xs font-bold">IG</a>}
+              </div>
+            )}
+          </div>
 
           {/* Follow/Follower Counts */}
           <div className="flex items-center gap-6">

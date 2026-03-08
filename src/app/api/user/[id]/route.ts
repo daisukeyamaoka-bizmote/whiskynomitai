@@ -17,11 +17,16 @@ export async function GET(
 
     const { id: targetUserId } = await params;
 
-    // Fetch target user's display name and avatar
-    const [{ data: displayName }, { data: avatarUrl }] = await Promise.all([
-      supabase.rpc("get_user_display_name", { p_user_id: targetUserId }),
-      supabase.rpc("get_user_avatar_url", { p_user_id: targetUserId }),
-    ]);
+    // Fetch target user's full profile metadata
+    const { data: profileMeta } = await supabase.rpc("get_user_profile_meta", {
+      p_user_id: targetUserId,
+    });
+    const displayName = profileMeta?.display_name || "ウイスキーファン";
+    const avatarUrl = profileMeta?.avatar_url || "";
+    const bio = profileMeta?.bio || "";
+    const website = profileMeta?.website || "";
+    const twitter = profileMeta?.twitter || "";
+    const instagram = profileMeta?.instagram || "";
 
     // Fetch follow counts, follow status, and posts in parallel
     const [
@@ -196,7 +201,7 @@ export async function GET(
       comments_count: post.comments_count,
       created_at: post.created_at,
       user_id: post.user_id,
-      user_name: displayName || "ウイスキーファン",
+      user_name: displayName,
       is_liked: likedPostIds.has(post.id),
       is_bookmarked: bookmarkedPostIds.has(post.id),
       is_following: !!isFollowingResult.data,
@@ -216,8 +221,12 @@ export async function GET(
 
     return NextResponse.json({
       id: targetUserId,
-      display_name: displayName || "ウイスキーファン",
-      avatar_url: avatarUrl || "",
+      display_name: displayName,
+      avatar_url: avatarUrl,
+      bio,
+      website,
+      twitter,
+      instagram,
       is_own: targetUserId === user.id,
       is_following: !!isFollowingResult.data,
       following_count: followingCountResult.count || 0,
