@@ -1,8 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "@/lib/supabase/server";
+import { checkAiUsage, logAiUsage } from "@/lib/ai-usage";
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    // Freemium gate
+    const usage = await checkAiUsage(supabase, user.id);
+    if (!usage.canUse) {
+      return NextResponse.json(
+        {
+          error: "今月のAI無料利用回数（3回）を超えました",
+          upgrade: true,
+          usage,
+        },
+        { status: 403 }
+      );
+    }
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey || apiKey === "placeholder") {
       return NextResponse.json(
@@ -85,6 +109,9 @@ export async function POST(request: NextRequest) {
     if (result.error) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
+
+    // Log AI usage
+    await logAiUsage(supabase, user.id, "analyze");
 
     return NextResponse.json(result);
   } catch (error) {

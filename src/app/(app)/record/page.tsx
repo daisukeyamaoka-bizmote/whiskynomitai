@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Loader2, Edit3, Save, X } from "lucide-react";
+import { Camera, Loader2, Edit3, Save, X, Crown } from "lucide-react";
+import Link from "next/link";
 import { resizeImage } from "@/lib/image";
 import Image from "next/image";
 
@@ -33,6 +34,7 @@ export default function RecordPage() {
   const [drinkingLocation, setDrinkingLocation] = useState("");
   const [price, setPrice] = useState("");
   const [error, setError] = useState("");
+  const [needsUpgrade, setNeedsUpgrade] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -66,6 +68,9 @@ export default function RecordPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (data.upgrade) {
+          setNeedsUpgrade(true);
+        }
         setError(data.error || "解析に失敗しました");
         setStep("capture");
         return;
@@ -197,6 +202,15 @@ export default function RecordPage() {
           />
           {error && (
             <p className="text-red-400 text-sm text-center">{error}</p>
+          )}
+          {needsUpgrade && (
+            <Link
+              href="/plan"
+              className="inline-flex items-center gap-2 bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
+            >
+              <Crown size={16} />
+              プレミアムにアップグレード
+            </Link>
           )}
         </div>
       )}
@@ -413,6 +427,17 @@ export default function RecordPage() {
 
           {error && (
             <p className="text-red-400 text-sm text-center">{error}</p>
+          )}
+          {needsUpgrade && (
+            <div className="text-center">
+              <Link
+                href="/plan"
+                className="inline-flex items-center gap-2 bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
+              >
+                <Crown size={16} />
+                プレミアムにアップグレード
+              </Link>
+            </div>
           )}
         </div>
       )}

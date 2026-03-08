@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { checkAiUsage, logAiUsage } from "@/lib/ai-usage";
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey || apiKey === "placeholder") {
-      return NextResponse.json(
-        { error: "ANTHROPIC_API_KEYが設定されていません。" },
-        { status: 500 }
-      );
-    }
-
     const supabase = await createClient();
     const {
       data: { user },
@@ -19,6 +12,27 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    // Freemium gate
+    const usage = await checkAiUsage(supabase, user.id);
+    if (!usage.canUse) {
+      return NextResponse.json(
+        {
+          error: "今月のAI無料利用回数（3回）を超えました",
+          upgrade: true,
+          usage,
+        },
+        { status: 403 }
+      );
+    }
+
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey || apiKey === "placeholder") {
+      return NextResponse.json(
+        { error: "ANTHROPIC_API_KEYが設定されていません。" },
+        { status: 500 }
+      );
     }
 
     const { record_id, name, distillery, region, type, age, abv } =
@@ -90,6 +104,9 @@ food_pairingsは5つ提供してください。具体的な料理名やおつま
     }
 
     const result = JSON.parse(jsonMatch[0]);
+
+    // Log AI usage
+    await logAiUsage(supabase, user.id, "research");
 
     // Save research result to database
     if (record_id) {

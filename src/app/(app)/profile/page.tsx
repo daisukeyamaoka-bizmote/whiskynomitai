@@ -16,6 +16,7 @@ import {
   BarChart3,
   MapPin,
   Compass,
+  Crown,
 } from "lucide-react";
 
 interface FlavorStat {
@@ -459,6 +460,22 @@ export default function ProfilePage() {
           </Link>
         </div>
       )}
+
+      {/* Plan Link */}
+      <Link
+        href="/plan"
+        className="block bg-whiskey-card border border-whiskey-border rounded-lg p-4 hover:border-whiskey-gold/30 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <Crown size={20} className="text-whiskey-gold" />
+          <div>
+            <p className="text-sm font-bold text-whiskey-text">プラン・課金</p>
+            <p className="text-xs text-whiskey-muted">
+              AI機能を無制限に使うなら月500円
+            </p>
+          </div>
+        </div>
+      </Link>
 
       {/* Logout */}
       <button

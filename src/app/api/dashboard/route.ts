@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { checkAiUsage, logAiUsage } from "@/lib/ai-usage";
 
 interface TastingRecord {
   name: string;
@@ -151,9 +152,10 @@ export async function GET() {
         count: ratings.length,
       }));
 
-    // ---- AI personality analysis (only if 2+ records) ----
+    // ---- AI personality analysis (only if 2+ records and AI available) ----
     let aiAnalysis = null;
-    if (typedRecords.length >= 2) {
+    const aiUsage = await checkAiUsage(supabase, user.id);
+    if (typedRecords.length >= 2 && aiUsage.canUse) {
       try {
         const apiKey = process.env.ANTHROPIC_API_KEY;
         if (apiKey && apiKey !== "placeholder") {
@@ -194,6 +196,7 @@ ${JSON.stringify(summary)}
           const jsonMatch = responseText.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             aiAnalysis = JSON.parse(jsonMatch[0]);
+            await logAiUsage(supabase, user.id, "dashboard");
           }
         }
       } catch (e) {
