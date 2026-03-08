@@ -24,19 +24,19 @@ export default function BottomNav() {
             <Link
               key={href}
               href={href}
-              className={`relative flex-1 flex flex-col items-center py-2.5 gap-0.5 transition-all duration-500 active:scale-[0.85] ${
+              className={`relative flex-1 flex flex-col items-center py-2.5 gap-0.5 transition-all duration-200 active:scale-[0.85] ${
                 isActive
                   ? "text-whiskey-gold"
                   : "text-whiskey-muted hover:text-whiskey-text"
               }`}
-              style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}
+              style={{ transitionTimingFunction: "cubic-bezier(0.2, 0.8, 0.2, 1)" }}
               aria-label={label}
             >
               <div
-                className={`transition-all duration-500 ${
+                className={`transition-all duration-200 ${
                   isActive ? "scale-115 -translate-y-1" : ""
                 }`}
-                style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}
+                style={{ transitionTimingFunction: "cubic-bezier(0.2, 0.8, 0.2, 1)" }}
               >
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} />
               </div>
