@@ -73,6 +73,7 @@ interface TasteProfile {
 interface UserProfile {
   id: string;
   display_name: string;
+  avatar_url: string;
   is_own: boolean;
   is_following: boolean;
   following_count: number;
@@ -157,8 +158,8 @@ export default function UserProfilePage() {
   const fetchProfile = useCallback(async () => {
     try {
       const [profileRes, dashboardRes] = await Promise.all([
-        fetch(`/api/user/${userId}`),
-        fetch(`/api/user/${userId}/dashboard`),
+        fetch(`/api/user/${userId}`, { cache: "no-store" }),
+        fetch(`/api/user/${userId}/dashboard`, { cache: "no-store" }),
       ]);
 
       if (profileRes.ok) {
@@ -410,10 +411,14 @@ export default function UserProfilePage() {
       {/* User Profile Card */}
       <div className="glass-card p-5">
         <div className="flex flex-col items-center text-center gap-3">
-          <div className="w-20 h-20 rounded-full bg-whiskey-gold/8 border-2 border-whiskey-gold/20 flex items-center justify-center">
-            <span className="text-whiskey-gold font-bold text-3xl">
-              {profile.display_name.charAt(0)}
-            </span>
+          <div className="w-20 h-20 rounded-full bg-whiskey-gold/8 border-2 border-whiskey-gold/20 flex items-center justify-center overflow-hidden">
+            {profile.avatar_url ? (
+              <Image src={profile.avatar_url} alt="" width={80} height={80} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-whiskey-gold font-bold text-3xl">
+                {profile.display_name.charAt(0)}
+              </span>
+            )}
           </div>
           <h1 className="text-lg font-bold text-whiskey-text">{profile.display_name}</h1>
 

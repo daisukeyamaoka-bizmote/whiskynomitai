@@ -17,10 +17,11 @@ export async function GET(
 
     const { id: targetUserId } = await params;
 
-    // Fetch target user's display name
-    const { data: displayName } = await supabase.rpc("get_user_display_name", {
-      p_user_id: targetUserId,
-    });
+    // Fetch target user's display name and avatar
+    const [{ data: displayName }, { data: avatarUrl }] = await Promise.all([
+      supabase.rpc("get_user_display_name", { p_user_id: targetUserId }),
+      supabase.rpc("get_user_avatar_url", { p_user_id: targetUserId }),
+    ]);
 
     // Fetch follow counts, follow status, and posts in parallel
     const [
@@ -216,6 +217,7 @@ export async function GET(
     return NextResponse.json({
       id: targetUserId,
       display_name: displayName || "ウイスキーファン",
+      avatar_url: avatarUrl || "",
       is_own: targetUserId === user.id,
       is_following: !!isFollowingResult.data,
       following_count: followingCountResult.count || 0,
