@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
 export default function SignupPage() {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -16,6 +17,11 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!fullName.trim()) {
+      setError("氏名を入力してください");
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError("パスワードが一致しません");
@@ -34,6 +40,9 @@ export default function SignupPage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          full_name: fullName.trim(),
+        },
       },
     });
 
@@ -81,6 +90,23 @@ export default function SignupPage() {
 
         {/* Signup Form */}
         <form onSubmit={handleSignup} className="space-y-4">
+          <div>
+            <label
+              htmlFor="fullName"
+              className="block text-sm text-whiskey-muted mb-1"
+            >
+              氏名
+            </label>
+            <input
+              id="fullName"
+              type="text"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full bg-whiskey-card border border-whiskey-border rounded-lg px-4 py-3 text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+              placeholder="山田 太郎"
+              required
+            />
+          </div>
           <div>
             <label
               htmlFor="email"

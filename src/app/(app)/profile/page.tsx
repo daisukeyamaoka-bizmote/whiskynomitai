@@ -63,6 +63,7 @@ interface DashboardData {
 
 export default function ProfilePage() {
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -79,6 +80,7 @@ export default function ProfilePage() {
       } = await supabase.auth.getUser();
       if (user) {
         setEmail(user.email || "");
+        setFullName(user.user_metadata?.full_name || "");
       }
 
       const res = await fetch("/api/dashboard");
@@ -128,11 +130,14 @@ export default function ProfilePage() {
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-whiskey-gold/10 border border-whiskey-gold/20 flex items-center justify-center">
             <span className="text-whiskey-gold font-bold text-lg">
-              {email.charAt(0).toUpperCase()}
+              {(fullName || email).charAt(0).toUpperCase()}
             </span>
           </div>
           <div className="flex-1">
-            <p className="text-sm text-whiskey-text">{email}</p>
+            {fullName && (
+              <p className="text-sm font-bold text-whiskey-text">{fullName}</p>
+            )}
+            <p className="text-xs text-whiskey-muted">{email}</p>
             {dashboard && (
               <p className="text-xs text-whiskey-muted">
                 {dashboard.total}本のウイスキーを記録
