@@ -183,7 +183,10 @@ export default function RecordPage() {
   };
 
   const handleShareToTimeline = async () => {
-    if (!savedRecordId) return;
+    if (!savedRecordId) {
+      setError("記録IDが見つかりません。もう一度お試しください。");
+      return;
+    }
     setSharing(true);
     setError("");
 
@@ -200,14 +203,16 @@ export default function RecordPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "投稿に失敗しました");
+        console.error("Timeline POST failed:", res.status, data);
+        setError(data.error || `投稿に失敗しました (${res.status})`);
         setSharing(false);
         return;
       }
 
       router.push("/timeline");
-    } catch {
-      setError("投稿中にエラーが発生しました");
+    } catch (err) {
+      console.error("Timeline POST error:", err);
+      setError("投稿中にエラーが発生しました。通信状況をご確認ください。");
       setSharing(false);
     }
   };
@@ -562,6 +567,10 @@ export default function RecordPage() {
               className="w-full glass-input px-3 py-2 text-whiskey-text placeholder:text-whiskey-muted/50 min-h-[80px] resize-none text-sm"
             />
           </div>
+
+          {error && (
+            <p className="text-red-400 text-sm text-center">{error}</p>
+          )}
 
           {/* Share Buttons */}
           <div className="space-y-3">
