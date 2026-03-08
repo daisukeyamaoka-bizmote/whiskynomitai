@@ -132,6 +132,7 @@ export async function GET(request: NextRequest) {
         return {
           id: uid,
           name: meta?.display_name || "ウイスキーファン",
+          user_handle: meta?.user_handle || "",
           avatar_url: meta?.avatar_url || "",
           record_count: recCount || 0,
         };
@@ -141,6 +142,7 @@ export async function GET(request: NextRequest) {
     const followingSet = new Set((followResult.data || []).map((f: { following_id: string }) => f.following_id));
     const bookmarkedPostIds = new Set((bookmarkResult.data || []).map((b: { post_id: string }) => b.post_id));
     const nameMap = new Map(nameResults.map((n) => [n.id, n.name]));
+    const handleMap = new Map(nameResults.map((n) => [n.id, n.user_handle]));
     const avatarMap = new Map(nameResults.map((n) => [n.id, n.avatar_url]));
     const recordCountMap = new Map(nameResults.map((n) => [n.id, n.record_count]));
 
@@ -153,6 +155,7 @@ export async function GET(request: NextRequest) {
       created_at: post.created_at,
       user_id: post.user_id,
       user_name: nameMap.get(post.user_id) || "ウイスキーファン",
+      user_handle: handleMap.get(post.user_id) || "",
       user_avatar_url: avatarMap.get(post.user_id) || "",
       user_level: getUserLevel(recordCountMap.get(post.user_id) || 0),
       is_liked: likedPostIds.has(post.id),

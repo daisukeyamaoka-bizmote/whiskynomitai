@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Sparkles, Loader2, RefreshCw, Crown } from "lucide-react";
 import Link from "next/link";
+import WhiskyLoader from "@/components/WhiskyLoader";
 
 interface Suggestion {
   name: string;
@@ -71,7 +72,7 @@ export default function SuggestPage() {
           <div className="w-16 h-16 rounded-full glass-card flex items-center justify-center animate-pulse-glow">
             <Sparkles size={28} className="text-whiskey-gold" />
           </div>
-          <Loader2 size={32} className="animate-spin text-whiskey-gold" />
+          <WhiskyLoader />
           <p className="text-whiskey-muted text-sm">
             AIがあなたの好みを分析中...
           </p>

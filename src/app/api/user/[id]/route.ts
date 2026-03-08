@@ -22,6 +22,7 @@ export async function GET(
       p_user_id: targetUserId,
     });
     const displayName = profileMeta?.display_name || "ウイスキーファン";
+    const userHandle = profileMeta?.user_handle || "";
     const avatarUrl = profileMeta?.avatar_url || "";
     const bio = profileMeta?.bio || "";
     const website = profileMeta?.website || "";
@@ -222,6 +223,7 @@ export async function GET(
     return NextResponse.json({
       id: targetUserId,
       display_name: displayName,
+      user_handle: userHandle,
       avatar_url: avatarUrl,
       bio,
       website,

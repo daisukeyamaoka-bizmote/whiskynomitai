@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Search, Filter, Camera, Loader2, Bookmark, X, Wine } from "lucide-react";
 import Image from "next/image";
+import WhiskyLoader from "@/components/WhiskyLoader";
 
 interface TastingRecord {
   id: string;
@@ -379,9 +380,7 @@ export default function CollectionPage() {
       {collectionTab === "tsuginomu" && (
         <>
           {loadingBookmarks && (
-            <div className="flex justify-center py-12">
-              <Loader2 size={32} className="animate-spin text-whiskey-gold" />
-            </div>
+            <WhiskyLoader />
           )}
 
           {!loadingBookmarks && bookmarks.length === 0 && (

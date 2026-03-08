@@ -26,6 +26,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import ShareModal from "@/components/ShareModal";
+import WhiskyLoader from "@/components/WhiskyLoader";
 
 interface FoodPairing {
   name: string;
@@ -189,9 +190,7 @@ export default function RecordDetailPage({
 
   if (loading) {
     return (
-      <div className="py-8 flex justify-center">
-        <Loader2 size={32} className="animate-spin text-whiskey-gold" />
-      </div>
+      <WhiskyLoader />
     );
   }
 

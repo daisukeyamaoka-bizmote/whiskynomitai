@@ -27,6 +27,7 @@ import {
   TrendingUp,
   Link as LinkIcon,
 } from "lucide-react";
+import WhiskyLoader from "@/components/WhiskyLoader";
 
 interface TastingRecord {
   id: string;
@@ -75,6 +76,7 @@ interface TasteProfile {
 interface UserProfile {
   id: string;
   display_name: string;
+  user_handle: string;
   avatar_url: string;
   bio: string;
   website: string;
@@ -381,9 +383,7 @@ export default function UserProfilePage() {
 
   if (loading) {
     return (
-      <div className="py-8 flex justify-center">
-        <Loader2 size={32} className="animate-spin text-whiskey-gold" />
-      </div>
+      <WhiskyLoader />
     );
   }
 
@@ -429,6 +429,7 @@ export default function UserProfilePage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-whiskey-text">{profile.display_name}</h1>
+            {profile.user_handle && <p className="text-xs text-whiskey-gold/60">@{profile.user_handle}</p>}
             {profile.bio && <p className="text-xs text-whiskey-text/80 mt-1 line-clamp-2">{profile.bio}</p>}
             {(profile.website || profile.twitter || profile.instagram) && (
               <div className="flex items-center justify-center gap-3 mt-2">

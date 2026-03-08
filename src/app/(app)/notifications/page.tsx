@@ -13,6 +13,7 @@ import {
   Send,
   X,
 } from "lucide-react";
+import WhiskyLoader from "@/components/WhiskyLoader";
 
 interface Notification {
   id: string;
@@ -145,9 +146,7 @@ export default function NotificationsPage() {
       <h1 className="text-xl font-bold text-whiskey-text">通知</h1>
 
       {loading && (
-        <div className="flex justify-center py-12">
-          <Loader2 size={32} className="animate-spin text-whiskey-gold" />
-        </div>
+        <WhiskyLoader />
       )}
 
       {!loading && notifications.length === 0 && (

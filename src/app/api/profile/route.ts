@@ -17,6 +17,7 @@ export async function GET() {
       email: user.email,
       full_name: user.user_metadata?.full_name || "",
       display_name: user.user_metadata?.display_name || "",
+      user_handle: user.user_metadata?.user_handle || "",
       bio: user.user_metadata?.bio || "",
       avatar_url: user.user_metadata?.avatar_url || "",
       website: user.user_metadata?.website || "",
@@ -48,6 +49,7 @@ export async function PUT(request: NextRequest) {
       data: {
         full_name: body.full_name ?? user.user_metadata?.full_name,
         display_name: body.display_name ?? user.user_metadata?.display_name,
+        user_handle: body.user_handle ?? user.user_metadata?.user_handle,
         bio: body.bio ?? user.user_metadata?.bio,
         avatar_url: body.avatar_url ?? user.user_metadata?.avatar_url,
         website: body.website ?? user.user_metadata?.website,

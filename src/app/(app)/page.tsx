@@ -11,9 +11,11 @@ import {
   Bookmark,
   GlassWater,
   MapPin,
+  Share2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import WhiskyLoader from "@/components/WhiskyLoader";
 
 interface TastingRecord {
   id: string;
@@ -41,6 +43,7 @@ interface TimelinePost {
   created_at: string;
   user_id: string;
   user_name: string;
+  user_handle?: string;
   user_avatar_url?: string;
   user_level?: UserLevel;
   is_liked: boolean;
@@ -60,6 +63,13 @@ interface Comment {
   is_own: boolean;
 }
 
+interface MentionUser {
+  id: string;
+  display_name: string;
+  user_handle: string;
+  avatar_url: string;
+}
+
 type Tab = "all" | "following";
 
 export default function TimelinePage() {
@@ -74,6 +84,9 @@ export default function TimelinePage() {
   const [commentText, setCommentText] = useState("");
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [mentionUsers, setMentionUsers] = useState<MentionUser[]>([]);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const mentionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchPosts = useCallback(
     async (p: number, reset = false) => {
@@ -247,6 +260,40 @@ export default function TimelinePage() {
     }
   };
 
+  const handleCommentChange = (value: string) => {
+    setCommentText(value);
+    // Detect @mention
+    const match = value.match(/@(\w*)$/);
+    if (match) {
+      const q = match[1];
+      setMentionQuery(q);
+      if (mentionTimerRef.current) clearTimeout(mentionTimerRef.current);
+      if (q.length >= 1) {
+        mentionTimerRef.current = setTimeout(async () => {
+          try {
+            const res = await fetch(`/api/users/search?q=${encodeURIComponent(q)}`);
+            if (res.ok) {
+              const data = await res.json();
+              setMentionUsers(data.users || []);
+            }
+          } catch { /* ignore */ }
+        }, 200);
+      } else {
+        setMentionUsers([]);
+      }
+    } else {
+      setMentionQuery(null);
+      setMentionUsers([]);
+    }
+  };
+
+  const selectMention = (handle: string) => {
+    const newText = commentText.replace(/@\w*$/, `@${handle} `);
+    setCommentText(newText);
+    setMentionQuery(null);
+    setMentionUsers([]);
+  };
+
   const formatTime = (dateStr: string) => {
     const now = new Date();
     const date = new Date(dateStr);
@@ -299,11 +346,7 @@ export default function TimelinePage() {
         </button>
       </div>
 
-      {loading && (
-        <div className="flex justify-center py-12">
-          <Loader2 size={32} className="animate-spin text-whiskey-gold" />
-        </div>
-      )}
+      {loading && <WhiskyLoader text="読み込み中..." />}
 
       {!loading && posts.length === 0 && (
         <div className="flex flex-col items-center gap-4 py-12 animate-fadeInScale">
@@ -407,12 +450,39 @@ export default function TimelinePage() {
               ))}
             </div>
 
+            {/* Mention Suggestions */}
+            {mentionQuery !== null && mentionUsers.length > 0 && (
+              <div className="px-4 pb-2">
+                <div className="glass-card !rounded-lg overflow-hidden divide-y divide-whiskey-border/30">
+                  {mentionUsers.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => selectMention(u.user_handle)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-whiskey-gold/5 text-left"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {u.avatar_url ? (
+                          <Image src={u.avatar_url} alt="" width={28} height={28} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-whiskey-gold text-[10px] font-bold">{u.display_name.charAt(0)}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-whiskey-text truncate">{u.display_name}</p>
+                        <p className="text-[10px] text-whiskey-gold/60">@{u.user_handle}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="p-4 border-t border-whiskey-border/50 flex gap-2">
               <input
                 type="text"
                 value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="コメントを入力..."
+                onChange={(e) => handleCommentChange(e.target.value)}
+                placeholder="コメントを入力... @でメンション"
                 className="flex-1 glass-input rounded-full px-4 py-2 text-sm text-whiskey-text placeholder:text-whiskey-muted/50"
                 onKeyDown={(e) => {
                   if (
@@ -496,6 +566,7 @@ function PostCard({
               )}
             </div>
             <p className="text-[10px] text-whiskey-muted">
+              {post.user_handle && <span className="text-whiskey-gold/50">@{post.user_handle} · </span>}
               {formatTime(post.created_at)}
             </p>
           </div>
@@ -618,7 +689,7 @@ function PostCard({
 
           <button
             onClick={onBookmark}
-            className={`flex items-center gap-1.5 transition-all duration-300 active:scale-125 ml-auto ${
+            className={`flex items-center gap-1.5 transition-all duration-300 active:scale-125 ${
               post.is_bookmarked
                 ? "text-amber-500"
                 : "text-whiskey-muted hover:text-amber-500"
@@ -631,6 +702,27 @@ function PostCard({
             {!post.is_bookmarked && (
               <span className="text-[10px]">ツギノム</span>
             )}
+          </button>
+
+          <button
+            onClick={() => {
+              const r = record;
+              const info = [r?.name, r?.distillery, r?.region, r?.type].filter(Boolean).join(" / ");
+              const tags = r?.flavor_tags?.length ? `\n${r.flavor_tags.map(t => `#${t}`).join(" ")}` : "";
+              const loc = r?.drinking_location ? `\n📍 ${r.drinking_location}` : "";
+              const rating = r ? `\n⭐ ${r.rating}/10` : "";
+              const comment = post.comment ? `\n${post.comment}` : "";
+              const text = `🥃 ${r?.name || ""}${rating}${comment}\n${info}${tags}${loc}\n\n#ウイスキーノミタイ #whisky`;
+
+              if (navigator.share) {
+                navigator.share({ text }).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(text);
+              }
+            }}
+            className="flex items-center gap-1.5 text-whiskey-muted hover:text-whiskey-gold transition-colors ml-auto"
+          >
+            <Share2 size={18} />
           </button>
         </div>
       </div>

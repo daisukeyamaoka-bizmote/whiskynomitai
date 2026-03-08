@@ -26,6 +26,7 @@ import {
   Compass,
   Link as LinkIcon,
 } from "lucide-react";
+import WhiskyLoader from "@/components/WhiskyLoader";
 
 // --- Types ---
 interface TastingRecord {
@@ -95,6 +96,7 @@ interface ProfileData {
   email: string;
   full_name: string;
   display_name: string;
+  user_handle: string;
   bio: string;
   avatar_url: string;
   website: string;
@@ -348,9 +350,7 @@ export default function MyPage() {
 
   if (loading) {
     return (
-      <div className="py-8 flex justify-center">
-        <Loader2 size={32} className="animate-spin text-whiskey-gold" />
-      </div>
+      <WhiskyLoader />
     );
   }
 
@@ -426,6 +426,14 @@ export default function MyPage() {
               <div>
                 <label className="block text-xs text-whiskey-muted mb-1.5">表示名</label>
                 <input type="text" value={editForm.display_name || ""} onChange={(e) => setEditForm((prev) => ({ ...prev, display_name: e.target.value }))} placeholder="ニックネーム" className="w-full glass-input px-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50" />
+              </div>
+              <div>
+                <label className="block text-xs text-whiskey-muted mb-1.5">ユーザーID</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-whiskey-muted text-sm">@</span>
+                  <input type="text" value={editForm.user_handle || ""} onChange={(e) => setEditForm((prev) => ({ ...prev, user_handle: e.target.value.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase() }))} placeholder="whisky_lover" maxLength={20} className="w-full glass-input pl-8 pr-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50" />
+                </div>
+                <p className="text-[10px] text-whiskey-muted mt-1">半角英数字とアンダースコアのみ</p>
               </div>
               <div>
                 <label className="block text-xs text-whiskey-muted mb-1.5">名前</label>
@@ -517,6 +525,7 @@ export default function MyPage() {
           </div>
           <div className="flex-1 min-w-0">
             {displayName && <p className="text-base font-bold text-whiskey-text truncate">{displayName}</p>}
+            {profile?.user_handle && <p className="text-xs text-whiskey-gold/60 truncate">@{profile.user_handle}</p>}
             <p className="text-xs text-whiskey-muted truncate">{email}</p>
             {profile?.bio && <p className="text-xs text-whiskey-text/80 mt-1 line-clamp-2">{profile.bio}</p>}
             {(profile?.website || profile?.twitter || profile?.instagram) && (
