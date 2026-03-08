@@ -528,7 +528,72 @@ function PostCard({
   const record = post.tasting_records;
   const [showHeart, setShowHeart] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const lastTapRef = useRef(0);
+  const shareMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close share menu on outside click
+  useEffect(() => {
+    if (!shareMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (shareMenuRef.current && !shareMenuRef.current.contains(e.target as Node)) {
+        setShareMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [shareMenuOpen]);
+
+  const buildShareText = () => {
+    const r = record;
+    const info = [r?.name, r?.distillery, r?.region, r?.type].filter(Boolean).join(" / ");
+    const tags = r?.flavor_tags?.length ? `\n${r.flavor_tags.map(t => `#${t}`).join(" ")}` : "";
+    const loc = r?.drinking_location ? `\n📍 ${r.drinking_location}` : "";
+    const rating = r ? `\n⭐ ${r.rating}/10` : "";
+    const comment = post.comment ? `\n${post.comment}` : "";
+    return `🥃 ${r?.name || ""}${rating}${comment}\n${info}${tags}${loc}\n\n#ウイスキーノミタイ #whisky`;
+  };
+
+  const shareToX = () => {
+    const text = buildShareText();
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank", "width=550,height=420");
+    setShareMenuOpen(false);
+  };
+
+  const shareWithImage = async () => {
+    const r = record;
+    if (r?.photo_url && navigator.share) {
+      try {
+        const res = await fetch(r.photo_url);
+        const blob = await res.blob();
+        const ext = blob.type.includes("png") ? "png" : "jpg";
+        const file = new File([blob], `whisky.${ext}`, { type: blob.type });
+        await navigator.share({
+          text: buildShareText(),
+          files: [file],
+        });
+      } catch {
+        // Fallback: share text only
+        navigator.share({ text: buildShareText() }).catch(() => {});
+      }
+    } else if (navigator.share) {
+      navigator.share({ text: buildShareText() }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(buildShareText());
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    }
+    setShareMenuOpen(false);
+  };
+
+  const copyShareText = () => {
+    navigator.clipboard.writeText(buildShareText());
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
+    setShareMenuOpen(false);
+  };
 
   const handleDoubleTap = () => {
     const now = Date.now();
@@ -704,26 +769,46 @@ function PostCard({
             )}
           </button>
 
-          <button
-            onClick={() => {
-              const r = record;
-              const info = [r?.name, r?.distillery, r?.region, r?.type].filter(Boolean).join(" / ");
-              const tags = r?.flavor_tags?.length ? `\n${r.flavor_tags.map(t => `#${t}`).join(" ")}` : "";
-              const loc = r?.drinking_location ? `\n📍 ${r.drinking_location}` : "";
-              const rating = r ? `\n⭐ ${r.rating}/10` : "";
-              const comment = post.comment ? `\n${post.comment}` : "";
-              const text = `🥃 ${r?.name || ""}${rating}${comment}\n${info}${tags}${loc}\n\n#ウイスキーノミタイ #whisky`;
+          <div className="relative ml-auto" ref={shareMenuRef}>
+            <button
+              onClick={() => setShareMenuOpen(!shareMenuOpen)}
+              className="flex items-center gap-1.5 text-whiskey-muted hover:text-whiskey-gold transition-colors"
+            >
+              <Share2 size={18} />
+              {shareCopied && <span className="text-[10px] text-whiskey-gold">コピー済</span>}
+            </button>
 
-              if (navigator.share) {
-                navigator.share({ text }).catch(() => {});
-              } else {
-                navigator.clipboard.writeText(text);
-              }
-            }}
-            className="flex items-center gap-1.5 text-whiskey-muted hover:text-whiskey-gold transition-colors ml-auto"
-          >
-            <Share2 size={18} />
-          </button>
+            {shareMenuOpen && (
+              <div className="absolute bottom-full right-0 mb-2 w-48 glass-card !rounded-xl overflow-hidden shadow-lg z-30 animate-fadeInScale">
+                <button
+                  onClick={shareToX}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-whiskey-text hover:bg-whiskey-gold/5 transition-colors border-b border-whiskey-border/30"
+                >
+                  <svg viewBox="0 0 24 24" width={16} height={16} className="text-whiskey-text fill-current flex-shrink-0">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                  </svg>
+                  <span>Xでシェア</span>
+                </button>
+                <button
+                  onClick={shareWithImage}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-whiskey-text hover:bg-whiskey-gold/5 transition-colors border-b border-whiskey-border/30"
+                >
+                  <Share2 size={16} className="flex-shrink-0" />
+                  <span>{record?.photo_url ? "画像付きでシェア" : "シェア"}</span>
+                </button>
+                <button
+                  onClick={copyShareText}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-whiskey-text hover:bg-whiskey-gold/5 transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" width={16} height={16} className="text-whiskey-text stroke-current fill-none flex-shrink-0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  <span>テキストをコピー</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
