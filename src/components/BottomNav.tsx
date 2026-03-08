@@ -24,19 +24,33 @@ export default function BottomNav() {
             <Link
               key={href}
               href={href}
-              className={`flex-1 flex flex-col items-center py-2 gap-0.5 transition-all duration-300 active:scale-90 ${
+              className={`relative flex-1 flex flex-col items-center py-2.5 gap-0.5 transition-all duration-500 active:scale-[0.85] ${
                 isActive
                   ? "text-whiskey-gold"
                   : "text-whiskey-muted hover:text-whiskey-text"
               }`}
+              style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}
               aria-label={label}
             >
-              <div className={`transition-transform duration-300 ${isActive ? "scale-110 -translate-y-0.5" : ""}`}>
-                <Icon size={20} />
+              <div
+                className={`transition-all duration-500 ${
+                  isActive ? "scale-115 -translate-y-1" : ""
+                }`}
+                style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}
+              >
+                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} />
               </div>
-              <span className="text-[10px]">{label}</span>
+              <span className={`text-[10px] transition-all duration-300 ${isActive ? "font-bold" : ""}`}>
+                {label}
+              </span>
               {isActive && (
-                <div className="absolute bottom-0 w-8 h-0.5 bg-whiskey-gold rounded-full" />
+                <div
+                  className="absolute bottom-0 w-10 h-[3px] rounded-full animate-fadeInScale"
+                  style={{
+                    background: "linear-gradient(90deg, transparent, rgba(228, 184, 74, 0.8), transparent)",
+                    boxShadow: "0 0 8px rgba(228, 184, 74, 0.4)",
+                  }}
+                />
               )}
             </Link>
           );
