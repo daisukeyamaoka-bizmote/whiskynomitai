@@ -1,6 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+// Simplified level from record count (matches mypage LEVEL_DEFS)
+function getUserLevel(recordCount: number): { level: number; title: string } {
+  const xp = recordCount * 10; // simplified: 10 XP per record
+  const LEVELS = [
+    { level: 1, title: "ビギナー", minXp: 0 },
+    { level: 2, title: "テイスター", minXp: 30 },
+    { level: 3, title: "愛好家", minXp: 80 },
+    { level: 4, title: "探究者", minXp: 160 },
+    { level: 5, title: "ウイスキー通", minXp: 300 },
+    { level: 6, title: "コニサー", minXp: 500 },
+    { level: 7, title: "ソムリエ", minXp: 800 },
+    { level: 8, title: "マスター", minXp: 1200 },
+    { level: 9, title: "グランドマスター", minXp: 1800 },
+    { level: 10, title: "レジェンド", minXp: 2500 },
+  ];
+  let current = LEVELS[0];
+  for (const def of LEVELS) {
+    if (xp >= def.minXp) current = def;
+    else break;
+  }
+  return { level: current.level, title: current.title };
+}
+
 const POST_SELECT = `
   id,
   comment,
@@ -17,7 +40,8 @@ const POST_SELECT = `
   whiskey_rating,
   whiskey_photo_url,
   whiskey_flavor_tags,
-  whiskey_note
+  whiskey_note,
+  whiskey_drinking_location
 `;
 
 export async function GET(request: NextRequest) {
@@ -99,10 +123,18 @@ export async function GET(request: NextRequest) {
             .eq("user_id", user.id)
             .in("post_id", postIds)
         : Promise.resolve({ data: [] }),
-      // Fetch display names in parallel (all at once)
+      // Fetch display names and record counts in parallel
       ...userIds.map(async (uid) => {
-        const { data } = await supabase.rpc("get_user_profile_meta", { p_user_id: uid });
-        return { id: uid, name: data?.display_name || "ウイスキーファン", avatar_url: data?.avatar_url || "" };
+        const [{ data: meta }, { data: recCount }] = await Promise.all([
+          supabase.rpc("get_user_profile_meta", { p_user_id: uid }),
+          supabase.rpc("get_user_record_count", { p_user_id: uid }),
+        ]);
+        return {
+          id: uid,
+          name: meta?.display_name || "ウイスキーファン",
+          avatar_url: meta?.avatar_url || "",
+          record_count: recCount || 0,
+        };
       }),
     ]);
 
@@ -110,6 +142,7 @@ export async function GET(request: NextRequest) {
     const bookmarkedPostIds = new Set((bookmarkResult.data || []).map((b: { post_id: string }) => b.post_id));
     const nameMap = new Map(nameResults.map((n) => [n.id, n.name]));
     const avatarMap = new Map(nameResults.map((n) => [n.id, n.avatar_url]));
+    const recordCountMap = new Map(nameResults.map((n) => [n.id, n.record_count]));
 
     // Map to frontend-friendly format
     const enrichedPosts = (posts || []).map((post) => ({
@@ -121,6 +154,7 @@ export async function GET(request: NextRequest) {
       user_id: post.user_id,
       user_name: nameMap.get(post.user_id) || "ウイスキーファン",
       user_avatar_url: avatarMap.get(post.user_id) || "",
+      user_level: getUserLevel(recordCountMap.get(post.user_id) || 0),
       is_liked: likedPostIds.has(post.id),
       is_bookmarked: bookmarkedPostIds.has(post.id),
       is_following: followingSet.has(post.user_id),
@@ -135,6 +169,7 @@ export async function GET(request: NextRequest) {
         photo_url: post.whiskey_photo_url,
         flavor_tags: post.whiskey_flavor_tags || [],
         note: post.whiskey_note,
+        drinking_location: post.whiskey_drinking_location || null,
       },
     }));
 
@@ -175,7 +210,7 @@ export async function POST(request: NextRequest) {
     // Fetch the record (user's own, so RLS allows it)
     const { data: record, error: recordError } = await supabase
       .from("tasting_records")
-      .select("id, name, distillery, region, type, rating, photo_url, flavor_tags, note")
+      .select("id, name, distillery, region, type, rating, photo_url, flavor_tags, note, drinking_location")
       .eq("id", record_id)
       .eq("user_id", user.id)
       .single();
@@ -204,6 +239,7 @@ export async function POST(request: NextRequest) {
         whiskey_photo_url: record.photo_url,
         whiskey_flavor_tags: record.flavor_tags || [],
         whiskey_note: record.note,
+        whiskey_drinking_location: record.drinking_location || null,
       })
       .select()
       .single();

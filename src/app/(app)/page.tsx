@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Bookmark,
   GlassWater,
+  MapPin,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -24,6 +25,12 @@ interface TastingRecord {
   photo_url: string | null;
   flavor_tags: string[];
   note: string | null;
+  drinking_location: string | null;
+}
+
+interface UserLevel {
+  level: number;
+  title: string;
 }
 
 interface TimelinePost {
@@ -35,6 +42,7 @@ interface TimelinePost {
   user_id: string;
   user_name: string;
   user_avatar_url?: string;
+  user_level?: UserLevel;
   is_liked: boolean;
   is_bookmarked: boolean;
   is_following: boolean;
@@ -342,8 +350,8 @@ export default function TimelinePage() {
 
       {/* Comment Modal */}
       {commentPostId && (
-        <div className="fixed inset-0 glass-overlay z-50 flex items-end justify-center animate-fadeIn">
-          <div className="w-full max-w-[480px] glass-card !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
+        <div className="fixed inset-0 z-50 flex items-end justify-center animate-fadeIn" style={{ background: "rgba(0, 0, 0, 0.85)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
+          <div className="w-full max-w-[480px] bg-[#1a1a1a] border border-whiskey-border/30 !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
             <div className="flex items-center justify-between p-4 border-b border-whiskey-border/50">
               <h3 className="text-sm font-bold text-whiskey-text">コメント</h3>
               <button
@@ -476,10 +484,17 @@ function PostCard({
               </span>
             )}
           </div>
-          <div>
-            <p className="text-sm font-bold text-whiskey-text">
-              {post.user_name}
-            </p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-bold text-whiskey-text truncate">
+                {post.user_name}
+              </p>
+              {post.user_level && (
+                <span className="flex-shrink-0 text-[10px] font-bold text-whiskey-gold bg-whiskey-gold/10 px-1.5 py-0.5 rounded-full leading-none">
+                  Lv.{post.user_level.level}
+                </span>
+              )}
+            </div>
             <p className="text-[10px] text-whiskey-muted">
               {formatTime(post.created_at)}
             </p>
@@ -543,6 +558,19 @@ function PostCard({
               </span>
             ))}
           </div>
+        )}
+
+        {record?.drinking_location && (
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(record.drinking_location)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs text-whiskey-muted hover:text-whiskey-gold transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MapPin size={12} />
+            <span className="underline underline-offset-2">{record.drinking_location}</span>
+          </a>
         )}
 
         {(post.comment || record?.note) && (

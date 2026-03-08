@@ -795,8 +795,8 @@ export default function UserProfilePage() {
 
       {/* Follow List Modal */}
       {followListType && (
-        <div className="fixed inset-0 glass-overlay z-50 flex items-end justify-center animate-fadeIn">
-          <div className="w-full max-w-[480px] glass-card !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
+        <div className="fixed inset-0 z-50 flex items-end justify-center animate-fadeIn" style={{ background: "rgba(0, 0, 0, 0.85)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
+          <div className="w-full max-w-[480px] bg-[#1a1a1a] border border-whiskey-border/30 !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
             <div className="flex items-center justify-between p-4 border-b border-whiskey-border/50">
               <h3 className="text-sm font-bold text-whiskey-text">
                 {followListType === "following" ? "フォロー中" : "フォロワー"}
@@ -840,8 +840,8 @@ export default function UserProfilePage() {
 
       {/* Comment Modal */}
       {commentPostId && (
-        <div className="fixed inset-0 glass-overlay z-50 flex items-end justify-center animate-fadeIn">
-          <div className="w-full max-w-[480px] glass-card !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
+        <div className="fixed inset-0 z-50 flex items-end justify-center animate-fadeIn" style={{ background: "rgba(0, 0, 0, 0.85)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
+          <div className="w-full max-w-[480px] bg-[#1a1a1a] border border-whiskey-border/30 !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
             <div className="flex items-center justify-between p-4 border-b border-whiskey-border/50">
               <h3 className="text-sm font-bold text-whiskey-text">コメント</h3>
               <button onClick={() => setCommentPostId(null)} className="text-whiskey-muted hover:text-whiskey-text transition-all duration-200 hover:scale-110 active:scale-90">

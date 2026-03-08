@@ -10,6 +10,8 @@ import {
   Bookmark,
   MessageCircle,
   Bell,
+  Send,
+  X,
 } from "lucide-react";
 
 interface Notification {
@@ -24,9 +26,24 @@ interface Notification {
   created_at: string;
 }
 
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  user_name: string;
+  user_avatar_url?: string;
+  is_own: boolean;
+}
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [replyPostId, setReplyPostId] = useState<string | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
 
   useEffect(() => {
     fetchNotifications();
@@ -43,6 +60,45 @@ export default function NotificationsPage() {
       // ignore
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openReply = async (postId: string) => {
+    setReplyPostId(postId);
+    setComments([]);
+    setCommentText("");
+    setLoadingComments(true);
+    try {
+      const res = await fetch(`/api/timeline/comment?post_id=${postId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setComments(data.comments || []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const submitComment = async () => {
+    if (!replyPostId || !commentText.trim()) return;
+    setSubmittingComment(true);
+    try {
+      const res = await fetch("/api/timeline/comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ post_id: replyPostId, content: commentText.trim() }),
+      });
+      if (res.ok) {
+        const newComment = await res.json();
+        setComments((prev) => [...prev, newComment]);
+        setCommentText("");
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSubmittingComment(false);
     }
   };
 
@@ -107,13 +163,11 @@ export default function NotificationsPage() {
 
       {!loading && notifications.length > 0 && (
         <div className="space-y-1">
-          {notifications.map((n) => {
-            const href = n.type === "follow" ? `/user/${n.actor_id}` : `/user/${n.actor_id}`;
-            return (
+          {notifications.map((n) => (
+            <div key={n.id} className="glass-card overflow-hidden">
               <Link
-                key={n.id}
-                href={href}
-                className="flex items-start gap-3 glass-card p-3 active:opacity-70"
+                href={`/user/${n.actor_id}`}
+                className="flex items-start gap-3 p-3 active:opacity-70"
               >
                 <div className="w-9 h-9 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {n.actor_avatar_url ? (
@@ -134,8 +188,97 @@ export default function NotificationsPage() {
                   </p>
                 </div>
               </Link>
-            );
-          })}
+              {/* Reply button for comment notifications */}
+              {n.type === "comment" && n.post_id && (
+                <div className="px-3 pb-2 pl-[52px]">
+                  <button
+                    onClick={() => openReply(n.post_id!)}
+                    className="flex items-center gap-1.5 text-xs text-whiskey-gold hover:text-whiskey-gold/80 transition-colors active:scale-95"
+                  >
+                    <MessageCircle size={13} />
+                    返信する
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Reply Comment Modal */}
+      {replyPostId && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center animate-fadeIn" style={{ background: "rgba(0, 0, 0, 0.85)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
+          <div className="w-full max-w-[480px] bg-[#1a1a1a] border border-whiskey-border/30 !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
+            <div className="flex items-center justify-between p-4 border-b border-whiskey-border/50">
+              <h3 className="text-sm font-bold text-whiskey-text">コメント</h3>
+              <button
+                onClick={() => setReplyPostId(null)}
+                className="text-whiskey-muted hover:text-whiskey-text transition-all duration-200 hover:scale-110 active:scale-90"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {loadingComments && (
+                <div className="flex justify-center py-4">
+                  <Loader2 size={20} className="animate-spin text-whiskey-gold" />
+                </div>
+              )}
+              {!loadingComments && comments.length === 0 && (
+                <p className="text-whiskey-muted text-sm text-center py-4">
+                  まだコメントがありません
+                </p>
+              )}
+              {comments.map((comment) => (
+                <div key={comment.id} className="flex gap-3 animate-fadeInUp">
+                  <div className="w-8 h-8 rounded-full bg-whiskey-gold/5 border border-whiskey-gold/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {comment.user_avatar_url ? (
+                      <Image src={comment.user_avatar_url} alt="" width={32} height={32} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-whiskey-gold/70 text-xs font-bold">
+                        {comment.user_name.charAt(0)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs font-bold text-whiskey-text">{comment.user_name}</span>
+                      <span className="text-[10px] text-whiskey-muted">{formatTime(comment.created_at)}</span>
+                    </div>
+                    <p className="text-sm text-whiskey-text mt-0.5">{comment.content}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4 border-t border-whiskey-border/50 flex gap-2">
+              <input
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="返信を入力..."
+                className="flex-1 glass-input rounded-full px-4 py-2 text-sm text-whiskey-text placeholder:text-whiskey-muted/50"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !(e.nativeEvent as KeyboardEvent).isComposing) {
+                    submitComment();
+                  }
+                }}
+                autoFocus
+              />
+              <button
+                onClick={submitComment}
+                disabled={!commentText.trim() || submittingComment}
+                className="w-10 h-10 rounded-full glass-button text-whiskey-bg flex items-center justify-center disabled:opacity-30 active:scale-90"
+              >
+                {submittingComment ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Send size={16} />
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
