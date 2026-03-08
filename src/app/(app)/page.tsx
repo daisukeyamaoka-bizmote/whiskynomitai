@@ -557,7 +557,8 @@ function PostCard({
 
   const shareToX = () => {
     const text = buildShareText();
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    const shareUrl = `${window.location.origin}/share/${post.id}`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(url, "_blank", "width=550,height=420");
     setShareMenuOpen(false);
   };
