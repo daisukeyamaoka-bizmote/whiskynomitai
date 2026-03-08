@@ -2,7 +2,16 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Loader2, Edit3, Save, X, Crown } from "lucide-react";
+import {
+  Camera,
+  Loader2,
+  Edit3,
+  Save,
+  X,
+  Crown,
+  Send,
+  SkipForward,
+} from "lucide-react";
 import Link from "next/link";
 import { resizeImage } from "@/lib/image";
 import Image from "next/image";
@@ -20,7 +29,7 @@ interface WhiskeyInfo {
   description: string | null;
 }
 
-type Step = "capture" | "analyzing" | "review" | "saving";
+type Step = "capture" | "analyzing" | "review" | "saving" | "share";
 
 export default function RecordPage() {
   const [step, setStep] = useState<Step>("capture");
@@ -35,6 +44,9 @@ export default function RecordPage() {
   const [price, setPrice] = useState("");
   const [error, setError] = useState("");
   const [needsUpgrade, setNeedsUpgrade] = useState(false);
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
+  const [shareComment, setShareComment] = useState("");
+  const [sharing, setSharing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -146,7 +158,9 @@ export default function RecordPage() {
         return;
       }
 
-      router.push("/collection");
+      const savedData = await response.json();
+      setSavedRecordId(savedData.id);
+      setStep("share");
     } catch {
       setError("保存中にエラーが発生しました");
       setStep("review");
@@ -164,6 +178,26 @@ export default function RecordPage() {
     setNote("");
     setDrinkingLocation("");
     setPrice("");
+  };
+
+  const handleShareToTimeline = async () => {
+    if (!savedRecordId) return;
+    setSharing(true);
+
+    try {
+      await fetch("/api/timeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          record_id: savedRecordId,
+          comment: shareComment || null,
+          is_public: true,
+        }),
+      });
+      router.push("/timeline");
+    } catch {
+      router.push("/collection");
+    }
   };
 
   const updateInfo = (field: keyof WhiskeyInfo, value: string | number | string[] | null) => {
@@ -439,6 +473,92 @@ export default function RecordPage() {
               </Link>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Share Step */}
+      {step === "share" && whiskeyInfo && (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="text-center space-y-2">
+            <div className="w-16 h-16 rounded-full bg-green-500/10 border-2 border-green-500/30 flex items-center justify-center mx-auto">
+              <Save size={28} className="text-green-400" />
+            </div>
+            <h2 className="text-lg font-bold text-whiskey-text">
+              保存しました！
+            </h2>
+            <p className="text-whiskey-muted text-sm">
+              ウイ活としてタイムラインに投稿しませんか？
+            </p>
+          </div>
+
+          {/* Preview Card */}
+          <div className="bg-whiskey-card border border-whiskey-border rounded-lg overflow-hidden">
+            {imagePreview && (
+              <div className="aspect-[4/3]">
+                <Image
+                  src={imagePreview}
+                  alt={whiskeyInfo.name}
+                  width={480}
+                  height={360}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <div className="p-3">
+              <h3 className="font-bold text-whiskey-text text-sm">
+                {whiskeyInfo.name}
+              </h3>
+              <p className="text-xs text-whiskey-muted">
+                {[whiskeyInfo.distillery, whiskeyInfo.region, whiskeyInfo.type]
+                  .filter(Boolean)
+                  .join(" / ")}
+              </p>
+              <p className="text-whiskey-gold font-bold text-sm mt-1">
+                {rating}/10
+              </p>
+            </div>
+          </div>
+
+          {/* Share Comment */}
+          <div>
+            <label className="block text-xs text-whiskey-muted mb-1">
+              ひとことコメント（任意）
+            </label>
+            <textarea
+              value={shareComment}
+              onChange={(e) => setShareComment(e.target.value)}
+              placeholder="今日のウイスキーの感想..."
+              className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors min-h-[80px] resize-none text-sm"
+            />
+          </div>
+
+          {/* Share Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={handleShareToTimeline}
+              disabled={sharing}
+              className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {sharing ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  投稿中...
+                </>
+              ) : (
+                <>
+                  <Send size={18} />
+                  ウイ活に投稿する
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => router.push("/collection")}
+              className="w-full border border-whiskey-border text-whiskey-muted py-3 rounded-lg hover:bg-whiskey-card transition-colors flex items-center justify-center gap-2 text-sm"
+            >
+              <SkipForward size={16} />
+              投稿せずにコレクションへ
+            </button>
+          </div>
         </div>
       )}
     </div>

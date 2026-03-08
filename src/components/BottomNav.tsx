@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Camera, LayoutGrid, Sparkles } from "lucide-react";
+import { Home, Camera, LayoutGrid, Sparkles, Newspaper } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "ホーム", icon: Home },
+  { href: "/timeline", label: "ウイ活", icon: Newspaper },
   { href: "/record", label: "記録", icon: Camera },
   { href: "/collection", label: "コレクション", icon: LayoutGrid },
   { href: "/suggest", label: "おすすめ", icon: Sparkles },

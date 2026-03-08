@@ -1,0 +1,572 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+  Heart,
+  MessageCircle,
+  Loader2,
+  UserPlus,
+  UserCheck,
+  Wine,
+  Send,
+  X,
+  ChevronDown,
+} from "lucide-react";
+import Image from "next/image";
+
+interface TastingRecord {
+  id: string;
+  name: string;
+  distillery: string | null;
+  region: string | null;
+  type: string | null;
+  rating: number;
+  photo_url: string | null;
+  flavor_tags: string[];
+  note: string | null;
+}
+
+interface TimelinePost {
+  id: string;
+  comment: string | null;
+  likes_count: number;
+  comments_count: number;
+  created_at: string;
+  user_id: string;
+  user_name: string;
+  is_liked: boolean;
+  is_following: boolean;
+  is_own: boolean;
+  tasting_records: TastingRecord;
+}
+
+interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  user_name: string;
+  is_own: boolean;
+}
+
+type Tab = "all" | "following";
+
+export default function TimelinePage() {
+  const [tab, setTab] = useState<Tab>("all");
+  const [posts, setPosts] = useState<TimelinePost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [commentPostId, setCommentPostId] = useState<string | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  useEffect(() => {
+    setPage(1);
+    setPosts([]);
+    fetchPosts(1, true);
+  }, [tab]);
+
+  const fetchPosts = async (p: number, reset = false) => {
+    if (reset) setLoading(true);
+    else setLoadingMore(true);
+
+    try {
+      const res = await fetch(`/api/timeline?tab=${tab}&page=${p}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPosts((prev) => (reset ? data.posts : [...prev, ...data.posts]));
+        setHasMore(data.hasMore);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    const next = page + 1;
+    setPage(next);
+    fetchPosts(next);
+  };
+
+  const handleLike = async (postId: string, isLiked: boolean) => {
+    // Optimistic update
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? {
+              ...p,
+              is_liked: !isLiked,
+              likes_count: isLiked
+                ? p.likes_count - 1
+                : p.likes_count + 1,
+            }
+          : p
+      )
+    );
+
+    try {
+      await fetch("/api/timeline/like", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post_id: postId,
+          action: isLiked ? "unlike" : "like",
+        }),
+      });
+    } catch {
+      // Revert on error
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                is_liked: isLiked,
+                likes_count: isLiked
+                  ? p.likes_count
+                  : p.likes_count - 1,
+              }
+            : p
+        )
+      );
+    }
+  };
+
+  const handleFollow = async (userId: string, isFollowing: boolean) => {
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.user_id === userId
+          ? { ...p, is_following: !isFollowing }
+          : p
+      )
+    );
+
+    try {
+      await fetch("/api/timeline/follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          action: isFollowing ? "unfollow" : "follow",
+        }),
+      });
+    } catch {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.user_id === userId
+            ? { ...p, is_following: isFollowing }
+            : p
+        )
+      );
+    }
+  };
+
+  const openComments = async (postId: string) => {
+    setCommentPostId(postId);
+    setComments([]);
+    setCommentText("");
+    setLoadingComments(true);
+
+    try {
+      const res = await fetch(
+        `/api/timeline/comment?post_id=${postId}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setComments(data.comments || []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  const submitComment = async () => {
+    if (!commentPostId || !commentText.trim()) return;
+    setSubmittingComment(true);
+
+    try {
+      const res = await fetch("/api/timeline/comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          post_id: commentPostId,
+          content: commentText.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        const newComment = await res.json();
+        setComments((prev) => [...prev, newComment]);
+        setCommentText("");
+
+        // Update comment count in posts
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === commentPostId
+              ? { ...p, comments_count: p.comments_count + 1 }
+              : p
+          )
+        );
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const formatTime = (dateStr: string) => {
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffMin < 1) return "たった今";
+    if (diffMin < 60) return `${diffMin}分前`;
+    if (diffHour < 24) return `${diffHour}時間前`;
+    if (diffDay < 7) return `${diffDay}日前`;
+    return date.toLocaleDateString("ja-JP", {
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  return (
+    <div className="py-4 space-y-4">
+      <h1 className="text-xl font-bold text-whiskey-text">ウイ活</h1>
+
+      {/* Tab Switcher */}
+      <div className="flex border-b border-whiskey-border">
+        <button
+          onClick={() => setTab("all")}
+          className={`flex-1 py-2.5 text-sm font-bold transition-colors relative ${
+            tab === "all"
+              ? "text-whiskey-gold"
+              : "text-whiskey-muted hover:text-whiskey-text"
+          }`}
+        >
+          みんな
+          {tab === "all" && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-whiskey-gold" />
+          )}
+        </button>
+        <button
+          onClick={() => setTab("following")}
+          className={`flex-1 py-2.5 text-sm font-bold transition-colors relative ${
+            tab === "following"
+              ? "text-whiskey-gold"
+              : "text-whiskey-muted hover:text-whiskey-text"
+          }`}
+        >
+          お気に入り
+          {tab === "following" && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-whiskey-gold" />
+          )}
+        </button>
+      </div>
+
+      {/* Loading */}
+      {loading && (
+        <div className="flex justify-center py-12">
+          <Loader2 size={32} className="animate-spin text-whiskey-gold" />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && posts.length === 0 && (
+        <div className="flex flex-col items-center gap-4 py-12">
+          <div className="w-20 h-20 rounded-full bg-whiskey-card border border-whiskey-border flex items-center justify-center">
+            <Wine size={32} className="text-whiskey-muted" />
+          </div>
+          <p className="text-whiskey-muted text-sm text-center">
+            {tab === "following"
+              ? "お気に入りのユーザーの投稿がここに表示されます"
+              : "まだウイ活がありません。最初の投稿をしてみましょう！"}
+          </p>
+        </div>
+      )}
+
+      {/* Posts */}
+      {!loading && (
+        <div className="space-y-4">
+          {posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              onLike={() => handleLike(post.id, post.is_liked)}
+              onComment={() => openComments(post.id)}
+              onFollow={() =>
+                handleFollow(post.user_id, post.is_following)
+              }
+              formatTime={formatTime}
+            />
+          ))}
+
+          {hasMore && (
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="w-full py-3 text-sm text-whiskey-muted hover:text-whiskey-gold transition-colors flex items-center justify-center gap-2"
+            >
+              {loadingMore ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <ChevronDown size={16} />
+              )}
+              もっと見る
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Comment Modal */}
+      {commentPostId && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center">
+          <div className="w-full max-w-[480px] bg-whiskey-card border-t border-whiskey-border rounded-t-2xl max-h-[70vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-whiskey-border">
+              <h3 className="text-sm font-bold text-whiskey-text">
+                コメント
+              </h3>
+              <button
+                onClick={() => setCommentPostId(null)}
+                className="text-whiskey-muted hover:text-whiskey-text"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Comments List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {loadingComments && (
+                <div className="flex justify-center py-4">
+                  <Loader2
+                    size={20}
+                    className="animate-spin text-whiskey-gold"
+                  />
+                </div>
+              )}
+              {!loadingComments && comments.length === 0 && (
+                <p className="text-whiskey-muted text-sm text-center py-4">
+                  まだコメントがありません
+                </p>
+              )}
+              {comments.map((comment) => (
+                <div key={comment.id} className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-whiskey-border flex items-center justify-center flex-shrink-0">
+                    <span className="text-whiskey-muted text-xs font-bold">
+                      {comment.user_name.charAt(0)}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs font-bold text-whiskey-text">
+                        {comment.user_name}
+                      </span>
+                      <span className="text-[10px] text-whiskey-muted">
+                        {formatTime(comment.created_at)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-whiskey-text mt-0.5">
+                      {comment.content}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Comment Input */}
+            <div className="p-4 border-t border-whiskey-border flex gap-2">
+              <input
+                type="text"
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="コメントを入力..."
+                className="flex-1 bg-whiskey-bg border border-whiskey-border rounded-full px-4 py-2 text-sm text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    !(e.nativeEvent as KeyboardEvent).isComposing
+                  ) {
+                    submitComment();
+                  }
+                }}
+              />
+              <button
+                onClick={submitComment}
+                disabled={!commentText.trim() || submittingComment}
+                className="w-10 h-10 rounded-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg flex items-center justify-center transition-colors disabled:opacity-30"
+              >
+                {submittingComment ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Send size={16} />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PostCard({
+  post,
+  onLike,
+  onComment,
+  onFollow,
+  formatTime,
+}: {
+  post: TimelinePost;
+  onLike: () => void;
+  onComment: () => void;
+  onFollow: () => void;
+  formatTime: (d: string) => string;
+}) {
+  const record = post.tasting_records;
+
+  return (
+    <div className="bg-whiskey-card border border-whiskey-border rounded-lg overflow-hidden">
+      {/* User Header */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-2">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-full bg-whiskey-gold/10 border border-whiskey-gold/20 flex items-center justify-center">
+            <span className="text-whiskey-gold text-sm font-bold">
+              {post.user_name.charAt(0)}
+            </span>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-whiskey-text">
+              {post.user_name}
+            </p>
+            <p className="text-[10px] text-whiskey-muted">
+              {formatTime(post.created_at)}
+            </p>
+          </div>
+        </div>
+        {!post.is_own && (
+          <button
+            onClick={onFollow}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors ${
+              post.is_following
+                ? "bg-whiskey-border text-whiskey-muted"
+                : "bg-whiskey-gold/10 text-whiskey-gold border border-whiskey-gold/20"
+            }`}
+          >
+            {post.is_following ? (
+              <>
+                <UserCheck size={12} />
+                フォロー中
+              </>
+            ) : (
+              <>
+                <UserPlus size={12} />
+                フォロー
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Photo */}
+      {record?.photo_url && (
+        <div className="aspect-[4/3]">
+          <Image
+            src={record.photo_url}
+            alt={record.name || ""}
+            width={480}
+            height={360}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
+      {/* Content */}
+      <div className="px-4 py-3 space-y-2.5">
+        {/* Whiskey Info */}
+        {record && (
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-whiskey-text text-sm">
+                {record.name}
+              </h3>
+              <p className="text-xs text-whiskey-muted">
+                {[record.distillery, record.region, record.type]
+                  .filter(Boolean)
+                  .join(" / ")}
+              </p>
+            </div>
+            <div className="flex-shrink-0 ml-2">
+              <div className="bg-whiskey-gold/10 border border-whiskey-gold/20 rounded-lg px-2 py-0.5 text-center">
+                <span className="text-whiskey-gold font-bold text-sm">
+                  {record.rating}/10
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Flavor Tags */}
+        {record?.flavor_tags && record.flavor_tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {record.flavor_tags.map((tag) => (
+              <span
+                key={tag}
+                className="px-2 py-0.5 bg-whiskey-gold/10 text-whiskey-gold text-xs rounded-full border border-whiskey-gold/20"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Comment / Note */}
+        {(post.comment || record?.note) && (
+          <p className="text-whiskey-text text-sm leading-relaxed">
+            {post.comment || record?.note}
+          </p>
+        )}
+
+        {/* Actions */}
+        <div className="flex items-center gap-5 pt-1">
+          <button
+            onClick={onLike}
+            className={`flex items-center gap-1.5 transition-colors ${
+              post.is_liked
+                ? "text-red-400"
+                : "text-whiskey-muted hover:text-red-400"
+            }`}
+          >
+            <Heart
+              size={18}
+              fill={post.is_liked ? "currentColor" : "none"}
+            />
+            {post.likes_count > 0 && (
+              <span className="text-xs">{post.likes_count}</span>
+            )}
+          </button>
+          <button
+            onClick={onComment}
+            className="flex items-center gap-1.5 text-whiskey-muted hover:text-whiskey-gold transition-colors"
+          >
+            <MessageCircle size={18} />
+            {post.comments_count > 0 && (
+              <span className="text-xs">{post.comments_count}</span>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
