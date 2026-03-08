@@ -2,7 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Camera, Wine, Star, MapPin, Loader2, Trophy } from "lucide-react";
+import {
+  Camera,
+  Wine,
+  Star,
+  MapPin,
+  Loader2,
+  Trophy,
+  Sparkles,
+  RefreshCw,
+  Crown,
+} from "lucide-react";
 import Image from "next/image";
 
 interface TastingRecord {
@@ -22,6 +32,27 @@ interface Preferences {
   preferred_types: string[];
   avg_rating: number;
   total_tastings: number;
+}
+
+interface Suggestion {
+  name: string;
+  distillery: string;
+  region: string;
+  type: string;
+  flavor_tags: string[];
+  reason: string;
+  match_score: number;
+}
+
+interface TasteProfile {
+  top_flavors: string[];
+  preferred_regions: string[];
+  tendency: string;
+}
+
+interface SuggestResponse {
+  suggestions: Suggestion[];
+  taste_profile: TasteProfile;
 }
 
 interface Stats {
@@ -98,6 +129,10 @@ export default function HomePage() {
   });
   const [loading, setLoading] = useState(true);
   const [showXpDetail, setShowXpDetail] = useState(false);
+  const [suggestData, setSuggestData] = useState<SuggestResponse | null>(null);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const [suggestError, setSuggestError] = useState("");
+  const [suggestNeedsUpgrade, setSuggestNeedsUpgrade] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -161,6 +196,34 @@ export default function HomePage() {
       console.error("Dashboard fetch error:", err);
     } finally {
       setLoading(false);
+    }
+
+    // Fetch suggestions in background (don't block main loading)
+    fetchSuggestions();
+  };
+
+  const fetchSuggestions = async () => {
+    setSuggestLoading(true);
+    setSuggestError("");
+    setSuggestNeedsUpgrade(false);
+
+    try {
+      const response = await fetch("/api/suggest");
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (result.upgrade) {
+          setSuggestNeedsUpgrade(true);
+        }
+        setSuggestError(result.error || "");
+        return;
+      }
+
+      setSuggestData(result);
+    } catch {
+      setSuggestError("おすすめの取得に失敗しました");
+    } finally {
+      setSuggestLoading(false);
     }
   };
 
@@ -415,6 +478,129 @@ export default function HomePage() {
               ))}
             </div>
           )}
+
+          {/* AI Suggestions Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-whiskey-gold flex items-center gap-1.5">
+                <Sparkles size={14} />
+                AIおすすめ
+              </h2>
+              {suggestData && (
+                <button
+                  onClick={fetchSuggestions}
+                  disabled={suggestLoading}
+                  className="text-whiskey-muted hover:text-whiskey-gold transition-colors"
+                  aria-label="更新"
+                >
+                  <RefreshCw
+                    size={14}
+                    className={suggestLoading ? "animate-spin" : ""}
+                  />
+                </button>
+              )}
+            </div>
+
+            {suggestLoading && !suggestData && (
+              <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-6 flex flex-col items-center gap-3">
+                <Loader2
+                  size={24}
+                  className="animate-spin text-whiskey-gold"
+                />
+                <p className="text-whiskey-muted text-xs">
+                  AIがあなたの好みを分析中...
+                </p>
+              </div>
+            )}
+
+            {suggestError && !suggestData && (
+              <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 text-center space-y-3">
+                <p className="text-whiskey-muted text-sm">{suggestError}</p>
+                {suggestNeedsUpgrade && (
+                  <Link
+                    href="/plan"
+                    className="inline-flex items-center gap-2 bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-5 py-2 rounded-lg transition-colors text-xs"
+                  >
+                    <Crown size={14} />
+                    プレミアムにアップグレード
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {suggestData && (
+              <>
+                {/* Taste Tendency */}
+                {suggestData.taste_profile.tendency && (
+                  <div className="bg-gradient-to-br from-whiskey-gold/10 to-whiskey-gold/5 border border-whiskey-gold/20 rounded-lg p-3">
+                    <p className="text-whiskey-text text-sm leading-relaxed">
+                      {suggestData.taste_profile.tendency}
+                    </p>
+                  </div>
+                )}
+
+                {/* Suggestion Cards */}
+                {suggestData.suggestions.map((suggestion, index) => (
+                  <div
+                    key={index}
+                    className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-2.5"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-whiskey-text text-sm">
+                          {suggestion.name}
+                        </h3>
+                        <p className="text-xs text-whiskey-muted">
+                          {[
+                            suggestion.distillery,
+                            suggestion.region,
+                            suggestion.type,
+                          ]
+                            .filter(Boolean)
+                            .join(" / ")}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0 ml-2">
+                        <div className="bg-whiskey-gold/10 border border-whiskey-gold/20 rounded-lg px-2 py-0.5 text-center">
+                          <span className="text-whiskey-gold font-bold text-xs">
+                            {suggestion.match_score}%
+                          </span>
+                          <p className="text-[9px] text-whiskey-muted">
+                            マッチ
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {suggestion.flavor_tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {suggestion.flavor_tags.map((tag) => {
+                          const isMatch =
+                            suggestData.taste_profile.top_flavors.includes(tag);
+                          return (
+                            <span
+                              key={tag}
+                              className={`px-1.5 py-0.5 text-[11px] rounded-full border ${
+                                isMatch
+                                  ? "bg-whiskey-gold/20 text-whiskey-gold border-whiskey-gold/40"
+                                  : "bg-whiskey-gold/5 text-whiskey-muted border-whiskey-border"
+                              }`}
+                            >
+                              {tag}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <p className="text-whiskey-muted text-xs leading-relaxed">
+                      {suggestion.reason}
+                    </p>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
         </>
       )}
     </div>
