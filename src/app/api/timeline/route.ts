@@ -1,6 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+const POST_SELECT = `
+  id,
+  comment,
+  is_public,
+  likes_count,
+  comments_count,
+  created_at,
+  user_id,
+  record_id,
+  whiskey_name,
+  whiskey_distillery,
+  whiskey_region,
+  whiskey_type,
+  whiskey_rating,
+  whiskey_photo_url,
+  whiskey_flavor_tags,
+  whiskey_note
+`;
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -13,34 +32,19 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const tab = searchParams.get("tab") || "all"; // "all" or "following"
+    const tab = searchParams.get("tab") || "all";
     const page = parseInt(searchParams.get("page") || "1");
     const limit = 20;
     const offset = (page - 1) * limit;
 
     let query = supabase
       .from("timeline_posts")
-      .select(
-        `
-        id,
-        comment,
-        is_public,
-        likes_count,
-        comments_count,
-        created_at,
-        user_id,
-        record_id,
-        tasting_records (
-          id, name, distillery, region, type, rating, photo_url, flavor_tags, note
-        )
-      `
-      )
+      .select(POST_SELECT)
       .eq("is_public", true)
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (tab === "following") {
-      // Get list of users the current user follows
       const { data: follows } = await supabase
         .from("user_follows")
         .select("following_id")
@@ -65,45 +69,55 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user display names for posts
-    const userIds = [...new Set((posts || []).map((p) => p.user_id))];
-    const userNames: Record<string, string> = {};
-
-    for (const uid of userIds) {
-      const { data: userData } = await supabase.auth.admin.getUserById(uid);
-      userNames[uid] =
-        userData?.user?.user_metadata?.full_name || "ウイスキーファン";
-    }
-
     // Check which posts the current user has liked
     const postIds = (posts || []).map((p) => p.id);
-    const { data: userLikes } = await supabase
-      .from("timeline_likes")
-      .select("post_id")
-      .eq("user_id", user.id)
-      .in("post_id", postIds.length > 0 ? postIds : ["none"]);
+    let likedPostIds = new Set<string>();
+    if (postIds.length > 0) {
+      const { data: userLikes } = await supabase
+        .from("timeline_likes")
+        .select("post_id")
+        .eq("user_id", user.id)
+        .in("post_id", postIds);
 
-    const likedPostIds = new Set(
-      (userLikes || []).map((l) => l.post_id)
-    );
+      likedPostIds = new Set((userLikes || []).map((l) => l.post_id));
+    }
 
     // Check which users the current user follows
-    const { data: userFollows } = await supabase
-      .from("user_follows")
-      .select("following_id")
-      .eq("follower_id", user.id)
-      .in("following_id", userIds.length > 0 ? userIds : ["none"]);
+    const userIds = [...new Set((posts || []).map((p) => p.user_id))];
+    let followingSet = new Set<string>();
+    if (userIds.length > 0) {
+      const { data: userFollows } = await supabase
+        .from("user_follows")
+        .select("following_id")
+        .eq("follower_id", user.id)
+        .in("following_id", userIds);
 
-    const followingSet = new Set(
-      (userFollows || []).map((f) => f.following_id)
-    );
+      followingSet = new Set((userFollows || []).map((f) => f.following_id));
+    }
 
+    // Map to frontend-friendly format
     const enrichedPosts = (posts || []).map((post) => ({
-      ...post,
-      user_name: userNames[post.user_id] || "ウイスキーファン",
+      id: post.id,
+      comment: post.comment,
+      likes_count: post.likes_count,
+      comments_count: post.comments_count,
+      created_at: post.created_at,
+      user_id: post.user_id,
+      user_name: "ウイスキーファン",
       is_liked: likedPostIds.has(post.id),
       is_following: followingSet.has(post.user_id),
       is_own: post.user_id === user.id,
+      tasting_records: {
+        id: post.record_id,
+        name: post.whiskey_name,
+        distillery: post.whiskey_distillery,
+        region: post.whiskey_region,
+        type: post.whiskey_type,
+        rating: post.whiskey_rating,
+        photo_url: post.whiskey_photo_url,
+        flavor_tags: post.whiskey_flavor_tags || [],
+        note: post.whiskey_note,
+      },
     }));
 
     return NextResponse.json({
@@ -140,10 +154,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the record belongs to the user
+    // Fetch the record (user's own, so RLS allows it)
     const { data: record } = await supabase
       .from("tasting_records")
-      .select("id")
+      .select("id, name, distillery, region, type, rating, photo_url, flavor_tags, note")
       .eq("id", record_id)
       .eq("user_id", user.id)
       .single();
@@ -155,6 +169,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Save post with whiskey snapshot data
     const { data: post, error } = await supabase
       .from("timeline_posts")
       .insert({
@@ -162,6 +177,14 @@ export async function POST(request: NextRequest) {
         record_id,
         comment: comment || null,
         is_public,
+        whiskey_name: record.name,
+        whiskey_distillery: record.distillery,
+        whiskey_region: record.region,
+        whiskey_type: record.type,
+        whiskey_rating: record.rating,
+        whiskey_photo_url: record.photo_url,
+        whiskey_flavor_tags: record.flavor_tags || [],
+        whiskey_note: record.note,
       })
       .select()
       .single();

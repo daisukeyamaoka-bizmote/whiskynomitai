@@ -35,19 +35,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user names
-    const userIds = [...new Set((comments || []).map((c) => c.user_id))];
-    const userNames: Record<string, string> = {};
-
-    for (const uid of userIds) {
-      const { data: userData } = await supabase.auth.admin.getUserById(uid);
-      userNames[uid] =
-        userData?.user?.user_metadata?.full_name || "ウイスキーファン";
-    }
-
     const enriched = (comments || []).map((c) => ({
       ...c,
-      user_name: userNames[c.user_id] || "ウイスキーファン",
+      user_name: "ウイスキーファン",
       is_own: c.user_id === user.id,
     }));
 
