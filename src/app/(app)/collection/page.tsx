@@ -315,7 +315,7 @@ export default function CollectionPage() {
                 <Camera size={32} className="text-whiskey-muted" />
               </div>
               <p className="text-whiskey-muted text-center text-sm">まだ記録がありません</p>
-              <Link href="/record" className="glass-button text-whiskey-bg font-bold px-6 py-2.5 text-sm">
+              <Link href="/record" className="glass-button text-white font-bold px-6 py-2.5 text-sm">
                 最初の一杯を記録する
               </Link>
             </div>
@@ -398,7 +398,7 @@ export default function CollectionPage() {
               </div>
               <Link
                 href="/timeline"
-                className="glass-button text-whiskey-bg font-bold px-6 py-2.5 text-sm"
+                className="glass-button text-white font-bold px-6 py-2.5 text-sm"
               >
                 みんなのウイ活を見る
               </Link>

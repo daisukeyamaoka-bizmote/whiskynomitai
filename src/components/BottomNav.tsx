@@ -33,7 +33,7 @@ export default function BottomNav() {
   }, [pathname]);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 glass-nav border-t">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 glass-nav border-t safe-area-bottom">
       <div className="max-w-[480px] mx-auto flex">
         {navItems.map(({ href, label, icon: Icon }, i) => {
           const isActive =
@@ -65,16 +65,10 @@ export default function BottomNav() {
                   transition: isBouncing ? "none" : "transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
                 }}
               >
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} />
+                <Icon size={22} strokeWidth={isActive ? 2.2 : 1.6} />
               </div>
               {isActive && (
-                <div
-                  className="absolute bottom-0 w-10 h-[3px] rounded-full transition-all duration-300"
-                  style={{
-                    background: "linear-gradient(90deg, transparent, rgba(228, 184, 74, 0.8), transparent)",
-                    transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-                  }}
-                />
+                <div className="absolute bottom-0 w-6 h-[2px] rounded-full bg-whiskey-gold" />
               )}
             </Link>
           );

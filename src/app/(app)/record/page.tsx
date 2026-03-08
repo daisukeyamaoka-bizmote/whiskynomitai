@@ -236,7 +236,7 @@ export default function RecordPage() {
           <div className="flex flex-col gap-3 w-full max-w-xs">
             <button
               onClick={() => cameraInputRef.current?.click()}
-              className="w-full glass-button text-whiskey-bg font-bold px-8 py-3.5 flex items-center justify-center gap-2"
+              className="w-full glass-button text-white font-bold px-8 py-3.5 flex items-center justify-center gap-2"
             >
               <Camera size={20} />
               ボトルを撮影する
@@ -483,7 +483,7 @@ export default function RecordPage() {
             <button
               onClick={handleSave}
               disabled={step === "saving"}
-              className="flex-1 glass-button text-whiskey-bg font-bold py-3 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 glass-button text-white font-bold py-3 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {step === "saving" ? (
                 <>
@@ -570,7 +570,7 @@ export default function RecordPage() {
             <button
               onClick={handleShareToTimeline}
               disabled={sharing}
-              className="w-full glass-button text-whiskey-bg font-bold py-3.5 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full glass-button text-white font-bold py-3.5 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {sharing ? (
                 <>

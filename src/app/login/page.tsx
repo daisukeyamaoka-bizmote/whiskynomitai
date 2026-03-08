@@ -106,7 +106,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading || socialLoading}
-            className="w-full glass-button text-whiskey-bg font-bold py-3 disabled:opacity-50 active:scale-95 transition-transform"
+            className="w-full glass-button text-white font-bold py-3 disabled:opacity-50 active:scale-95 transition-transform"
           >
             {loading ? "ログイン中..." : "ログイン"}
           </button>

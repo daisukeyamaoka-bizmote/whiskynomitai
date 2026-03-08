@@ -277,8 +277,8 @@ export default function ShareModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
-      <div className="bg-whiskey-card border border-whiskey-border rounded-lg w-full max-w-sm overflow-hidden">
+    <div className="fixed inset-0 glass-overlay flex items-center justify-center z-50 px-4">
+      <div className="bg-white border border-whiskey-border rounded-2xl w-full max-w-sm overflow-hidden shadow-lg">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-whiskey-border">
           <div className="flex items-center gap-2">
@@ -312,7 +312,7 @@ export default function ShareModal({
           {/* Native Share (mobile) */}
           <button
             onClick={handleNativeShare}
-            className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-white font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <Share2 size={16} />
             シェアする

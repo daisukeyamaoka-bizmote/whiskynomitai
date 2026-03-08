@@ -166,7 +166,7 @@ export default function OnboardingPage() {
             </div>
             <button
               onClick={() => setStep("experience")}
-              className="glass-button text-whiskey-bg font-bold px-8 py-3 flex items-center gap-2 active:scale-95 transition-transform"
+              className="glass-button text-white font-bold px-8 py-3 flex items-center gap-2 active:scale-95 transition-transform"
             >
               はじめる
               <ArrowRight size={18} />
@@ -237,7 +237,7 @@ export default function OnboardingPage() {
             <button
               onClick={() => setStep("style")}
               disabled={answers.flavors.length === 0}
-              className="w-full glass-button text-whiskey-bg font-bold py-3 disabled:opacity-30 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+              className="w-full glass-button text-white font-bold py-3 disabled:opacity-30 flex items-center justify-center gap-2 active:scale-95 transition-transform"
             >
               次へ
               <ArrowRight size={18} />
@@ -384,7 +384,7 @@ export default function OnboardingPage() {
               <button
                 onClick={handleFinish}
                 disabled={finishing}
-                className="w-full glass-button text-whiskey-bg font-bold py-3.5 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-transform"
+                className="w-full glass-button text-white font-bold py-3.5 flex items-center justify-center gap-2 disabled:opacity-50 active:scale-95 transition-transform"
               >
                 {finishing ? (
                   <>

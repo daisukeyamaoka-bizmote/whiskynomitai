@@ -413,7 +413,7 @@ export default function MyPage() {
                   <button
                     onClick={() => avatarInputRef.current?.click()}
                     disabled={uploadingAvatar}
-                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full glass-button text-whiskey-bg flex items-center justify-center active:scale-90"
+                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full glass-button text-white flex items-center justify-center active:scale-90"
                   >
                     {uploadingAvatar ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />}
                   </button>
@@ -555,7 +555,7 @@ export default function MyPage() {
         <div className="glass-card p-6 text-center space-y-3 animate-fadeInScale">
           <Wine size={32} className="text-whiskey-muted mx-auto animate-float" />
           <p className="text-whiskey-muted text-sm">ウイスキーを記録して、あなたの好みを分析しましょう</p>
-          <Link href="/record" className="inline-block glass-button text-whiskey-bg font-bold px-6 py-2.5 text-sm">
+          <Link href="/record" className="inline-block glass-button text-white font-bold px-6 py-2.5 text-sm">
             最初の1本を記録する
           </Link>
         </div>
@@ -573,7 +573,7 @@ export default function MyPage() {
                 </div>
                 {level.level >= 5 && (
                   <div className="absolute -top-1 -right-1 w-6 h-6 bg-whiskey-gold rounded-full flex items-center justify-center">
-                    <Trophy size={12} className="text-whiskey-bg" />
+                    <Trophy size={12} className="text-white" />
                   </div>
                 )}
               </div>
@@ -875,7 +875,7 @@ export default function MyPage() {
       {/* Logout */}
       <button
         onClick={handleLogout}
-        className="w-full glass-card !border-red-900/20 text-whiskey-muted py-3 hover:text-red-400 flex items-center justify-center gap-2 active:scale-[0.98]"
+        className="w-full glass-card !border-red-200 text-whiskey-muted py-3 hover:text-red-500 flex items-center justify-center gap-2 active:scale-[0.98]"
       >
         <LogOut size={16} />
         ログアウト

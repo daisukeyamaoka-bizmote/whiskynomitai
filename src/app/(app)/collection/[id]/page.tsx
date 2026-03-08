@@ -572,7 +572,7 @@ export default function RecordDetailPage({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 glass-button text-whiskey-bg font-bold py-3 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+              className="flex-1 glass-button text-white font-bold py-3 disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95 transition-transform"
             >
               {saving ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -600,7 +600,7 @@ export default function RecordDetailPage({
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="px-4 border border-red-900/50 text-red-400 py-3 rounded-lg hover:bg-red-950/30 transition-colors flex items-center justify-center"
+              className="px-4 border border-red-200 text-red-500 py-3 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center"
             >
               <Trash2 size={16} />
             </button>

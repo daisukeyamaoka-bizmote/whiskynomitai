@@ -108,7 +108,7 @@ export default function SuggestPage() {
               </p>
               <Link
                 href="/record"
-                className="inline-block glass-button text-whiskey-bg font-bold px-6 py-2.5 text-sm active:scale-90 transition-transform"
+                className="inline-block glass-button text-white font-bold px-6 py-2.5 text-sm active:scale-90 transition-transform"
               >
                 ウイスキーを記録する
               </Link>

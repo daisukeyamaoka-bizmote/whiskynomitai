@@ -461,7 +461,7 @@ export default function UserProfilePage() {
             onClick={handleFollow}
             disabled={followLoading}
             className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all duration-300 active:scale-95 ${
-              profile.is_following ? "bg-whiskey-border/50 text-whiskey-muted" : "glass-button text-whiskey-bg"
+              profile.is_following ? "bg-whiskey-border/50 text-whiskey-muted" : "glass-button text-white"
             }`}
           >
             {followLoading ? (
@@ -523,7 +523,7 @@ export default function UserProfilePage() {
                   </div>
                   {level.level >= 5 && (
                     <div className="absolute -top-1 -right-1 w-6 h-6 bg-whiskey-gold rounded-full flex items-center justify-center">
-                      <Trophy size={12} className="text-whiskey-bg" />
+                      <Trophy size={12} className="text-white" />
                     </div>
                   )}
                 </div>
@@ -796,8 +796,8 @@ export default function UserProfilePage() {
 
       {/* Follow List Modal */}
       {followListType && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center animate-fadeIn" style={{ background: "rgba(0, 0, 0, 0.85)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
-          <div className="w-full max-w-[480px] bg-[#1a1a1a] border border-whiskey-border/30 !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
+        <div className="fixed inset-0 z-50 flex items-end justify-center animate-fadeIn glass-overlay">
+          <div className="w-full max-w-[480px] bg-white border border-whiskey-border !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
             <div className="flex items-center justify-between p-4 border-b border-whiskey-border/50">
               <h3 className="text-sm font-bold text-whiskey-text">
                 {followListType === "following" ? "フォロー中" : "フォロワー"}
@@ -841,8 +841,8 @@ export default function UserProfilePage() {
 
       {/* Comment Modal */}
       {commentPostId && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center animate-fadeIn" style={{ background: "rgba(0, 0, 0, 0.85)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)" }}>
-          <div className="w-full max-w-[480px] bg-[#1a1a1a] border border-whiskey-border/30 !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
+        <div className="fixed inset-0 z-50 flex items-end justify-center animate-fadeIn glass-overlay">
+          <div className="w-full max-w-[480px] bg-white border border-whiskey-border !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
             <div className="flex items-center justify-between p-4 border-b border-whiskey-border/50">
               <h3 className="text-sm font-bold text-whiskey-text">コメント</h3>
               <button onClick={() => setCommentPostId(null)} className="text-whiskey-muted hover:text-whiskey-text transition-all duration-200 hover:scale-110 active:scale-90">
@@ -891,7 +891,7 @@ export default function UserProfilePage() {
               <button
                 onClick={submitComment}
                 disabled={!commentText.trim() || submittingComment}
-                className="w-10 h-10 rounded-full glass-button text-whiskey-bg flex items-center justify-center disabled:opacity-30 active:scale-90"
+                className="w-10 h-10 rounded-full glass-button text-white flex items-center justify-center disabled:opacity-30 active:scale-90"
               >
                 {submittingComment ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
               </button>
