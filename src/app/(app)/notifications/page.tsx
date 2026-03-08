@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Loader2,
   UserPlus,
@@ -16,6 +17,7 @@ interface Notification {
   type: "follow" | "like" | "bookmark" | "comment";
   actor_id: string;
   actor_name: string;
+  actor_avatar_url?: string;
   post_id?: string;
   whiskey_name?: string;
   content?: string;
@@ -113,10 +115,14 @@ export default function NotificationsPage() {
                 href={href}
                 className="flex items-start gap-3 glass-card p-3 active:opacity-70"
               >
-                <div className="w-9 h-9 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center flex-shrink-0">
-                  <span className="text-whiskey-gold text-xs font-bold">
-                    {n.actor_name.charAt(0)}
-                  </span>
+                <div className="w-9 h-9 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {n.actor_avatar_url ? (
+                    <Image src={n.actor_avatar_url} alt="" width={36} height={36} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-whiskey-gold text-xs font-bold">
+                      {n.actor_name.charAt(0)}
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-0.5">

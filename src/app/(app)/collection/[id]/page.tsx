@@ -534,10 +534,15 @@ export default function RecordDetailPage({
         ) : (
           <div className="space-y-2 text-sm">
             {record.drinking_location && (
-              <div className="flex items-center gap-2 text-whiskey-muted">
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(record.drinking_location)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-whiskey-gold/70 hover:text-whiskey-gold transition-colors"
+              >
                 <MapPin size={14} />
-                <span>{record.drinking_location}</span>
-              </div>
+                <span className="underline underline-offset-2">{record.drinking_location}</span>
+              </a>
             )}
             {record.price && (
               <div className="flex items-center gap-2 text-whiskey-muted">

@@ -68,12 +68,13 @@ export async function GET() {
         ? supabase.from("timeline_posts").select("id, whiskey_name").in("id", [...allPostIds])
         : Promise.resolve({ data: [] }),
       ...[...allUserIds].map(async (uid) => {
-        const { data } = await supabase.rpc("get_user_display_name", { p_user_id: uid });
-        return { id: uid, name: data || "ウイスキーファン" };
+        const { data } = await supabase.rpc("get_user_profile_meta", { p_user_id: uid });
+        return { id: uid, name: data?.display_name || "ウイスキーファン", avatar_url: data?.avatar_url || "" };
       }),
     ]);
 
     const nameMap = new Map(nameResults.map((n) => [n.id, n.name]));
+    const avatarMap = new Map(nameResults.map((n) => [n.id, n.avatar_url]));
     const postNameMap = new Map(
       (postNamesResult.data || []).map((p: { id: string; whiskey_name: string }) => [p.id, p.whiskey_name || ""])
     );
@@ -84,6 +85,7 @@ export async function GET() {
       type: "follow" | "like" | "bookmark" | "comment";
       actor_id: string;
       actor_name: string;
+      actor_avatar_url: string;
       post_id?: string;
       whiskey_name?: string;
       content?: string;
@@ -98,6 +100,7 @@ export async function GET() {
         type: "follow",
         actor_id: f.follower_id,
         actor_name: nameMap.get(f.follower_id) || "ウイスキーファン",
+        actor_avatar_url: avatarMap.get(f.follower_id) || "",
         created_at: f.created_at,
       });
     });
@@ -108,6 +111,7 @@ export async function GET() {
         type: "like",
         actor_id: l.user_id,
         actor_name: nameMap.get(l.user_id) || "ウイスキーファン",
+        actor_avatar_url: avatarMap.get(l.user_id) || "",
         post_id: l.post_id,
         whiskey_name: postNameMap.get(l.post_id) || "",
         created_at: l.created_at,
@@ -120,6 +124,7 @@ export async function GET() {
         type: "bookmark",
         actor_id: b.user_id,
         actor_name: nameMap.get(b.user_id) || "ウイスキーファン",
+        actor_avatar_url: avatarMap.get(b.user_id) || "",
         post_id: b.post_id,
         whiskey_name: b.whiskey_name || postNameMap.get(b.post_id) || "",
         created_at: b.created_at,
@@ -132,6 +137,7 @@ export async function GET() {
         type: "comment",
         actor_id: c.user_id,
         actor_name: nameMap.get(c.user_id) || "ウイスキーファン",
+        actor_avatar_url: avatarMap.get(c.user_id) || "",
         post_id: c.post_id,
         whiskey_name: postNameMap.get(c.post_id) || "",
         content: c.content,

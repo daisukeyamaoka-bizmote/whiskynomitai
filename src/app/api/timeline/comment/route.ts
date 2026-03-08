@@ -39,15 +39,17 @@ export async function GET(request: NextRequest) {
     const commentUserIds = [...new Set((comments || []).map((c) => c.user_id))];
     const nameResults = await Promise.all(
       commentUserIds.map(async (uid) => {
-        const { data } = await supabase.rpc("get_user_display_name", { p_user_id: uid });
-        return { id: uid, name: data || "ウイスキーファン" };
+        const { data } = await supabase.rpc("get_user_profile_meta", { p_user_id: uid });
+        return { id: uid, name: data?.display_name || "ウイスキーファン", avatar_url: data?.avatar_url || "" };
       })
     );
     const nameMap = new Map(nameResults.map((n) => [n.id, n.name]));
+    const avatarMap = new Map(nameResults.map((n) => [n.id, n.avatar_url]));
 
     const enriched = (comments || []).map((c) => ({
       ...c,
       user_name: nameMap.get(c.user_id) || "ウイスキーファン",
+      user_avatar_url: avatarMap.get(c.user_id) || "",
       is_own: c.user_id === user.id,
     }));
 
@@ -101,11 +103,12 @@ export async function POST(request: NextRequest) {
     // Increment comments count
     await supabase.rpc("increment_comments", { p_post_id: post_id });
 
-    const { data: displayName } = await supabase.rpc("get_user_display_name", { p_user_id: user.id });
+    const { data: meta } = await supabase.rpc("get_user_profile_meta", { p_user_id: user.id });
 
     return NextResponse.json({
       ...comment,
-      user_name: displayName || "ウイスキーファン",
+      user_name: meta?.display_name || "ウイスキーファン",
+      user_avatar_url: meta?.avatar_url || "",
       is_own: true,
     });
   } catch (error) {

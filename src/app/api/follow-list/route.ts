@@ -38,11 +38,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ users: [] });
     }
 
-    // Fetch display names
+    // Fetch display names and avatars
     const users = await Promise.all(
       userIds.map(async (uid) => {
-        const { data } = await supabase.rpc("get_user_display_name", { p_user_id: uid });
-        return { id: uid, display_name: data || "ウイスキーファン" };
+        const { data } = await supabase.rpc("get_user_profile_meta", { p_user_id: uid });
+        return { id: uid, display_name: data?.display_name || "ウイスキーファン", avatar_url: data?.avatar_url || "" };
       })
     );
 

@@ -61,6 +61,7 @@ interface Comment {
   created_at: string;
   user_id: string;
   user_name: string;
+  user_avatar_url?: string;
   is_own: boolean;
 }
 
@@ -92,6 +93,7 @@ interface UserProfile {
 interface FollowUser {
   id: string;
   display_name: string;
+  avatar_url?: string;
 }
 
 interface FlavorStat { name: string; count: number; }
@@ -821,8 +823,12 @@ export default function UserProfilePage() {
                   onClick={() => setFollowListType(null)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-whiskey-gold/5 transition-colors active:opacity-70"
                 >
-                  <div className="w-10 h-10 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center flex-shrink-0">
-                    <span className="text-whiskey-gold text-sm font-bold">{user.display_name.charAt(0)}</span>
+                  <div className="w-10 h-10 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {user.avatar_url ? (
+                      <Image src={user.avatar_url} alt="" width={40} height={40} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-whiskey-gold text-sm font-bold">{user.display_name.charAt(0)}</span>
+                    )}
                   </div>
                   <p className="text-sm font-bold text-whiskey-text">{user.display_name}</p>
                 </Link>
@@ -853,8 +859,12 @@ export default function UserProfilePage() {
               )}
               {comments.map((comment) => (
                 <div key={comment.id} className="flex gap-3 animate-fadeInUp">
-                  <div className="w-8 h-8 rounded-full bg-whiskey-gold/5 border border-whiskey-gold/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-whiskey-gold/70 text-xs font-bold">{comment.user_name.charAt(0)}</span>
+                  <div className="w-8 h-8 rounded-full bg-whiskey-gold/5 border border-whiskey-gold/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {comment.user_avatar_url ? (
+                      <Image src={comment.user_avatar_url} alt="" width={32} height={32} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-whiskey-gold/70 text-xs font-bold">{comment.user_name.charAt(0)}</span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2">

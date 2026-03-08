@@ -101,14 +101,15 @@ export async function GET(request: NextRequest) {
         : Promise.resolve({ data: [] }),
       // Fetch display names in parallel (all at once)
       ...userIds.map(async (uid) => {
-        const { data } = await supabase.rpc("get_user_display_name", { p_user_id: uid });
-        return { id: uid, name: data || "ウイスキーファン" };
+        const { data } = await supabase.rpc("get_user_profile_meta", { p_user_id: uid });
+        return { id: uid, name: data?.display_name || "ウイスキーファン", avatar_url: data?.avatar_url || "" };
       }),
     ]);
 
     const followingSet = new Set((followResult.data || []).map((f: { following_id: string }) => f.following_id));
     const bookmarkedPostIds = new Set((bookmarkResult.data || []).map((b: { post_id: string }) => b.post_id));
     const nameMap = new Map(nameResults.map((n) => [n.id, n.name]));
+    const avatarMap = new Map(nameResults.map((n) => [n.id, n.avatar_url]));
 
     // Map to frontend-friendly format
     const enrichedPosts = (posts || []).map((post) => ({
@@ -119,6 +120,7 @@ export async function GET(request: NextRequest) {
       created_at: post.created_at,
       user_id: post.user_id,
       user_name: nameMap.get(post.user_id) || "ウイスキーファン",
+      user_avatar_url: avatarMap.get(post.user_id) || "",
       is_liked: likedPostIds.has(post.id),
       is_bookmarked: bookmarkedPostIds.has(post.id),
       is_following: followingSet.has(post.user_id),

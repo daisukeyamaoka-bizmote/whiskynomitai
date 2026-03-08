@@ -34,6 +34,7 @@ interface TimelinePost {
   created_at: string;
   user_id: string;
   user_name: string;
+  user_avatar_url?: string;
   is_liked: boolean;
   is_bookmarked: boolean;
   is_following: boolean;
@@ -47,6 +48,7 @@ interface Comment {
   created_at: string;
   user_id: string;
   user_name: string;
+  user_avatar_url?: string;
   is_own: boolean;
 }
 
@@ -371,10 +373,14 @@ export default function TimelinePage() {
                   key={comment.id}
                   className="flex gap-3 animate-fadeInUp"
                 >
-                  <div className="w-8 h-8 rounded-full bg-whiskey-gold/5 border border-whiskey-gold/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-whiskey-gold/70 text-xs font-bold">
-                      {comment.user_name.charAt(0)}
-                    </span>
+                  <div className="w-8 h-8 rounded-full bg-whiskey-gold/5 border border-whiskey-gold/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {comment.user_avatar_url ? (
+                      <Image src={comment.user_avatar_url} alt="" width={32} height={32} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-whiskey-gold/70 text-xs font-bold">
+                        {comment.user_name.charAt(0)}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2">
@@ -461,10 +467,14 @@ function PostCard({
       {/* User Header - clickable to profile */}
       <div className="px-4 pt-3 pb-2">
         <Link href={`/user/${post.user_id}`} className="flex items-center gap-2.5 active:opacity-70">
-          <div className="w-9 h-9 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center">
-            <span className="text-whiskey-gold text-sm font-bold">
-              {post.user_name.charAt(0)}
-            </span>
+          <div className="w-9 h-9 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center overflow-hidden">
+            {post.user_avatar_url ? (
+              <Image src={post.user_avatar_url} alt="" width={36} height={36} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-whiskey-gold text-sm font-bold">
+                {post.user_name.charAt(0)}
+              </span>
+            )}
           </div>
           <div>
             <p className="text-sm font-bold text-whiskey-text">

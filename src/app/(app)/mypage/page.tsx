@@ -115,6 +115,7 @@ interface Stats {
 interface FollowUser {
   id: string;
   display_name: string;
+  avatar_url?: string;
 }
 
 // --- Level System ---
@@ -487,10 +488,14 @@ export default function MyPage() {
                   onClick={() => setFollowListType(null)}
                   className="flex items-center gap-3 px-4 py-3 hover:bg-whiskey-gold/5 transition-colors active:opacity-70"
                 >
-                  <div className="w-10 h-10 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center flex-shrink-0">
-                    <span className="text-whiskey-gold text-sm font-bold">
-                      {user.display_name.charAt(0)}
-                    </span>
+                  <div className="w-10 h-10 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {user.avatar_url ? (
+                      <Image src={user.avatar_url} alt="" width={40} height={40} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-whiskey-gold text-sm font-bold">
+                        {user.display_name.charAt(0)}
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm font-bold text-whiskey-text">{user.display_name}</p>
                 </Link>

@@ -12,6 +12,7 @@ import {
   Send,
   SkipForward,
   ImagePlus,
+  MapPin,
 } from "lucide-react";
 import Link from "next/link";
 import { resizeImage } from "@/lib/image";
@@ -453,12 +454,29 @@ export default function RecordPage() {
           {/* Optional Fields */}
           <div className="glass-card p-4 space-y-3">
             <h2 className="text-lg font-bold text-whiskey-gold">その他</h2>
-            <Field
-              label="飲んだ場所"
-              value={drinkingLocation}
-              onChange={setDrinkingLocation}
-              placeholder="バー名、自宅など"
-            />
+            <div>
+              <label className="block text-xs text-whiskey-muted mb-1">飲んだ場所</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={drinkingLocation}
+                  onChange={(e) => setDrinkingLocation(e.target.value)}
+                  placeholder="バー名、住所など"
+                  className="flex-1 glass-input px-3 py-2 text-whiskey-text text-sm placeholder:text-whiskey-muted/50"
+                />
+                {drinkingLocation.trim() && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(drinkingLocation.trim())}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 px-3 py-2 glass-tag text-whiskey-gold text-xs font-bold whitespace-nowrap active:scale-95 transition-transform"
+                  >
+                    <MapPin size={14} />
+                    地図
+                  </a>
+                )}
+              </div>
+            </div>
             <Field
               label="価格（円）"
               value={price}
