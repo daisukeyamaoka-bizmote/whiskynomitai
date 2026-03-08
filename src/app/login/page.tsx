@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -31,6 +32,23 @@ export default function LoginPage() {
 
     router.push("/");
     router.refresh();
+  };
+
+  const handleTwitterLogin = async () => {
+    setSocialLoading(true);
+    setError("");
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "twitter",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setError("問題が発生しました。しばらくしてからやりなおしてください。");
+      setSocialLoading(false);
+    }
   };
 
   return (
@@ -87,12 +105,33 @@ export default function LoginPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || socialLoading}
             className="w-full glass-button text-whiskey-bg font-bold py-3 disabled:opacity-50 active:scale-95 transition-transform"
           >
             {loading ? "ログイン中..." : "ログイン"}
           </button>
         </form>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-whiskey-border/30" />
+          <span className="text-whiskey-muted text-xs">または</span>
+          <div className="flex-1 h-px bg-whiskey-border/30" />
+        </div>
+
+        {/* Twitter/X Login */}
+        <button
+          onClick={handleTwitterLogin}
+          disabled={loading || socialLoading}
+          className="w-full flex items-center justify-center gap-3 border border-whiskey-border/30 rounded-lg py-3 text-whiskey-text hover:bg-whiskey-gold/5 transition-colors disabled:opacity-50 active:scale-95"
+        >
+          <svg viewBox="0 0 24 24" width={18} height={18} className="fill-current">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+          <span className="font-bold text-sm">
+            {socialLoading ? "接続中..." : "Xでログイン"}
+          </span>
+        </button>
 
         {/* Sign up link */}
         <p className="text-center text-whiskey-muted text-sm">
