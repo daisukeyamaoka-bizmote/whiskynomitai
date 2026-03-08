@@ -104,7 +104,16 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleFinish = () => {
+  const [finishing, setFinishing] = useState(false);
+
+  const handleFinish = async () => {
+    setFinishing(true);
+    try {
+      // Ensure onboarding_completed is set before navigating
+      await fetch("/api/onboarding/complete", { method: "POST" });
+    } catch {
+      // ignore - will try to navigate anyway
+    }
     router.push("/");
   };
 
@@ -371,10 +380,20 @@ export default function OnboardingPage() {
             <div className="space-y-3 pt-2">
               <button
                 onClick={handleFinish}
-                className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+                disabled={finishing}
+                className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                ウイスキージャーナルをはじめる
-                <ArrowRight size={18} />
+                {finishing ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    準備中...
+                  </>
+                ) : (
+                  <>
+                    ウイスキージャーナルをはじめる
+                    <ArrowRight size={18} />
+                  </>
+                )}
               </button>
               <p className="text-center text-xs text-whiskey-muted">
                 記録するほど、AIソムリエがあなたの好みを学習します
