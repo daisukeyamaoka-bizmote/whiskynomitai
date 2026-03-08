@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useCallback } from "react";
-import { X, Download, Share2 } from "lucide-react";
+import { useRef, useCallback, useState } from "react";
+import { X, Download, Share2, Check } from "lucide-react";
 
 interface ShareCardProps {
+  recordId: string;
   name: string;
   rating: number;
   distillery: string | null;
@@ -15,6 +16,7 @@ interface ShareCardProps {
 }
 
 export default function ShareModal({
+  recordId,
   name,
   rating,
   distillery,
@@ -25,6 +27,7 @@ export default function ShareModal({
   onClose,
 }: ShareCardProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [shared, setShared] = useState(false);
 
   const shareText = [
     `${name} ${rating}/10`,
@@ -35,6 +38,19 @@ export default function ShareModal({
   ]
     .filter(Boolean)
     .join("\n");
+
+  const logShare = async (platform: string) => {
+    try {
+      await fetch("/api/shares", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ record_id: recordId, platform }),
+      });
+      setShared(true);
+    } catch {
+      // Silent fail - don't block sharing
+    }
+  };
 
   const drawCard = useCallback((): HTMLCanvasElement | null => {
     const canvas = canvasRef.current;
@@ -58,7 +74,6 @@ export default function ShareModal({
     ctx.strokeRect(16, 16, w - 32, h - 32);
 
     // Corner accents
-    const cornerSize = 20;
     ctx.strokeStyle = "#d4af37";
     ctx.lineWidth = 3;
     // Top-left
@@ -104,7 +119,6 @@ export default function ShareModal({
     ctx.fillStyle = "#d4af37";
     ctx.font = "bold 26px sans-serif";
     ctx.textAlign = "center";
-    // Truncate if too long
     let displayName = name;
     while (ctx.measureText(displayName).width > w - 80 && displayName.length > 0) {
       displayName = displayName.slice(0, -1);
@@ -184,7 +198,7 @@ export default function ShareModal({
     return canvas;
   }, [name, rating, distillery, region, type, flavorTags, note]);
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     const canvas = drawCard();
     if (!canvas) return;
 
@@ -192,6 +206,8 @@ export default function ShareModal({
     link.download = `whiskey-${name.replace(/\s+/g, "-")}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
+
+    await logShare("download");
   };
 
   const handleNativeShare = async () => {
@@ -201,7 +217,6 @@ export default function ShareModal({
       try {
         const shareData: ShareData = { text: shareText };
 
-        // Try sharing with image if supported
         if (canvas) {
           const blob = await new Promise<Blob | null>((resolve) =>
             canvas.toBlob(resolve, "image/png")
@@ -217,6 +232,7 @@ export default function ShareModal({
         }
 
         await navigator.share(shareData);
+        await logShare("native");
         return;
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
@@ -225,25 +241,28 @@ export default function ShareModal({
 
     // Fallback: copy text
     await navigator.clipboard.writeText(shareText);
+    await logShare("native");
     alert("シェアテキストをコピーしました");
   };
 
-  const handleXShare = () => {
+  const handleXShare = async () => {
     const text = encodeURIComponent(shareText);
     window.open(
       `https://x.com/intent/tweet?text=${text}`,
       "_blank",
       "noopener,noreferrer"
     );
+    await logShare("x");
   };
 
-  const handleLineShare = () => {
+  const handleLineShare = async () => {
     const text = encodeURIComponent(shareText);
     window.open(
       `https://social-plugins.line.me/lineit/share?text=${text}`,
       "_blank",
       "noopener,noreferrer"
     );
+    await logShare("line");
   };
 
   // Draw card on mount
@@ -262,7 +281,15 @@ export default function ShareModal({
       <div className="bg-whiskey-card border border-whiskey-border rounded-lg w-full max-w-sm overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-whiskey-border">
-          <h3 className="text-sm font-bold text-whiskey-gold">シェアする</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-whiskey-gold">シェアする</h3>
+            {shared && (
+              <span className="flex items-center gap-1 text-[10px] text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded-full">
+                <Check size={10} />
+                +15 XP
+              </span>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="text-whiskey-muted hover:text-whiskey-text transition-colors"
@@ -320,6 +347,12 @@ export default function ShareModal({
             <Download size={14} />
             画像を保存
           </button>
+
+          {!shared && (
+            <p className="text-center text-[10px] text-whiskey-muted">
+              シェアすると +15 XP 獲得!
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -31,6 +31,7 @@ interface Stats {
   uniqueTypes: number;
   uniqueFlavors: number;
   highRatedCount: number;
+  shareCount: number;
 }
 
 // --- Level System ---
@@ -54,6 +55,7 @@ function calcXp(stats: Stats): number {
   xp += stats.uniqueTypes * 20;     // 新しいタイプ = 20XP
   xp += stats.uniqueFlavors * 5;    // フレーバー多様性 = 5XP
   xp += stats.highRatedCount * 5;   // 高評価(8+) = +5XP
+  xp += stats.shareCount * 15;      // シェア = 15XP
   return xp;
 }
 
@@ -78,6 +80,7 @@ function getXpBreakdown(stats: Stats) {
     { label: "タイプ", value: stats.uniqueTypes * 20, detail: `${stats.uniqueTypes}種 × 20` },
     { label: "フレーバー", value: stats.uniqueFlavors * 5, detail: `${stats.uniqueFlavors}種 × 5` },
     { label: "高評価", value: stats.highRatedCount * 5, detail: `${stats.highRatedCount}本 × 5` },
+    { label: "シェア", value: stats.shareCount * 15, detail: `${stats.shareCount}回 × 15` },
   ];
 }
 
@@ -91,6 +94,7 @@ export default function HomePage() {
     uniqueTypes: 0,
     uniqueFlavors: 0,
     highRatedCount: 0,
+    shareCount: 0,
   });
   const [loading, setLoading] = useState(true);
   const [showXpDetail, setShowXpDetail] = useState(false);
@@ -101,10 +105,17 @@ export default function HomePage() {
 
   const fetchData = async () => {
     try {
-      const [recordsRes, prefsRes] = await Promise.all([
+      const [recordsRes, prefsRes, sharesRes] = await Promise.all([
         fetch("/api/records?limit=3&page=1"),
         fetch("/api/preferences"),
+        fetch("/api/shares"),
       ]);
+
+      let shareCount = 0;
+      if (sharesRes.ok) {
+        const sharesData = await sharesRes.json();
+        shareCount = sharesData.count || 0;
+      }
 
       if (recordsRes.ok) {
         const recordsData = await recordsRes.json();
@@ -137,6 +148,7 @@ export default function HomePage() {
             uniqueTypes: types.size,
             uniqueFlavors: flavors.size,
             highRatedCount: highRated,
+            shareCount,
           });
         }
       }

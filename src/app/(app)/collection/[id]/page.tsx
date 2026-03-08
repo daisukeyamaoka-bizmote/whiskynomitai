@@ -609,6 +609,7 @@ export default function RecordDetailPage({
       {/* Share Modal */}
       {showShare && (
         <ShareModal
+          recordId={record.id}
           name={record.name}
           rating={record.rating}
           distillery={record.distillery}
