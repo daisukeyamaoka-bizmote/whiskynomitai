@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkAiUsage, logAiUsage } from "@/lib/ai-usage";
 import Anthropic from "@anthropic-ai/sdk";
 
 interface ChatMessage {
@@ -18,6 +19,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
+    // Check AI usage limits
+    const usage = await checkAiUsage(supabase, user.id);
+    if (!usage.canUse) {
+      return NextResponse.json(
+        { error: "本日のAI利用回数の上限に達しました", usage },
+        { status: 429 }
+      );
+    }
+
     const { messages, location } = (await request.json()) as {
       messages: ChatMessage[];
       location?: { lat: number; lng: number; area: string } | null;
@@ -26,6 +36,9 @@ export async function POST(request: Request) {
     if (!messages || messages.length === 0) {
       return NextResponse.json({ error: "メッセージが必要です" }, { status: 400 });
     }
+
+    // Limit message history length to prevent abuse
+    const limitedMessages = messages.slice(-20);
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey || apiKey === "placeholder") {
@@ -124,14 +137,16 @@ ${location ? `- 現在地: ${location.area}（緯度${location.lat}, 経度${loc
       model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
       system: systemPrompt,
-      messages: messages.map((m) => ({
+      messages: limitedMessages.map((m) => ({
         role: m.role,
-        content: m.content,
+        content: typeof m.content === "string" ? m.content.slice(0, 2000) : "",
       })),
     });
 
     const responseText =
       response.content[0].type === "text" ? response.content[0].text : "";
+
+    await logAiUsage(supabase, user.id, "sommelier");
 
     return NextResponse.json({ reply: responseText });
   } catch (error) {

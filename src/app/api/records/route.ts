@@ -14,13 +14,16 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const page = Math.max(parseInt(searchParams.get("page") || "1"), 1);
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "20"), 1), 100);
     const search = searchParams.get("search") || "";
     const region = searchParams.get("region") || "";
     const type = searchParams.get("type") || "";
     const minRating = searchParams.get("minRating") || "";
-    const sort = searchParams.get("sort") || "created_at";
+    const allowedSortColumns = ["created_at", "rating", "name", "distillery", "region", "type"];
+    const sort = allowedSortColumns.includes(searchParams.get("sort") || "")
+      ? searchParams.get("sort")!
+      : "created_at";
     const order = searchParams.get("order") || "desc";
 
     let query = supabase
@@ -29,7 +32,11 @@ export async function GET(request: NextRequest) {
       .eq("user_id", user.id);
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,distillery.ilike.%${search}%`);
+      // Sanitize: escape PostgREST filter special characters to prevent injection
+      const sanitized = search.replace(/[%_\\,.()"']/g, "");
+      if (sanitized) {
+        query = query.or(`name.ilike.%${sanitized}%,distillery.ilike.%${sanitized}%`);
+      }
     }
     if (region) {
       query = query.eq("region", region);
@@ -82,39 +89,55 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    // Input validation
+    if (!body.name || typeof body.name !== "string" || body.name.trim().length === 0) {
+      return NextResponse.json({ error: "銘柄名は必須です" }, { status: 400 });
+    }
+    const rating = parseInt(body.rating);
+    if (isNaN(rating) || rating < 1 || rating > 10) {
+      return NextResponse.json({ error: "評価は1〜10の整数で入力してください" }, { status: 400 });
+    }
+    const abv = body.abv != null ? parseFloat(body.abv) : null;
+    if (abv != null && (isNaN(abv) || abv < 0 || abv > 100)) {
+      return NextResponse.json({ error: "アルコール度数は0〜100で入力してください" }, { status: 400 });
+    }
+    const age = body.age != null ? parseInt(body.age) : null;
+    if (age != null && (isNaN(age) || age < 0 || age > 200)) {
+      return NextResponse.json({ error: "熟成年数は0〜200で入力してください" }, { status: 400 });
+    }
+    const price = body.price != null ? parseInt(body.price) : null;
+    if (price != null && (isNaN(price) || price < 0)) {
+      return NextResponse.json({ error: "価格は0以上で入力してください" }, { status: 400 });
+    }
+    const flavorTags = Array.isArray(body.flavor_tags)
+      ? body.flavor_tags.filter((t: unknown) => typeof t === "string").slice(0, 20).map((t: string) => t.slice(0, 30))
+      : [];
+
     const { data, error } = await supabase
       .from("tasting_records")
       .insert({
         user_id: user.id,
-        photo_url: body.photo_url,
-        name: body.name,
-        distillery: body.distillery,
-        region: body.region,
-        type: body.type,
-        abv: body.abv,
-        age: body.age,
-        flavor_tags: body.flavor_tags || [],
-        description: body.description,
-        rating: body.rating,
-        note: body.note,
-        drinking_location: body.drinking_location,
-        price: body.price,
+        photo_url: body.photo_url ? String(body.photo_url).slice(0, 500) : null,
+        name: String(body.name).trim().slice(0, 200),
+        distillery: body.distillery ? String(body.distillery).slice(0, 200) : null,
+        region: body.region ? String(body.region).slice(0, 100) : null,
+        type: body.type ? String(body.type).slice(0, 100) : null,
+        abv,
+        age,
+        flavor_tags: flavorTags,
+        description: body.description ? String(body.description).slice(0, 1000) : null,
+        rating,
+        note: body.note ? String(body.note).slice(0, 1000) : null,
+        drinking_location: body.drinking_location ? String(body.drinking_location).slice(0, 200) : null,
+        price,
       })
       .select()
       .single();
 
     if (error) {
       console.error("Record insert error:", error);
-      let errorMsg = "記録の保存に失敗しました";
-      if (error.code === "42P01") {
-        errorMsg = "テーブル「tasting_records」が存在しません。Supabaseでテーブルを作成してください。";
-      } else if (error.code === "42501") {
-        errorMsg = "テーブルへのアクセス権がありません。SupabaseのRLSポリシーを確認してください。";
-      } else if (error.message) {
-        errorMsg += `: ${error.message}`;
-      }
       return NextResponse.json(
-        { error: errorMsg },
+        { error: "記録の保存に失敗しました" },
         { status: 500 }
       );
     }

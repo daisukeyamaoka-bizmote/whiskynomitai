@@ -129,11 +129,11 @@ export async function POST(request: NextRequest) {
     } else if (errorStr.includes("insufficient") || errorStr.includes("billing") || errorStr.includes("credit")) {
       message = "APIクレジットが不足しています。Anthropic Consoleで残高を確認してください。";
     } else if (errorStr.includes("model")) {
-      message = "指定されたモデルが利用できません: " + errorStr;
+      message = "指定されたモデルが利用できません。";
     }
 
     return NextResponse.json(
-      { error: message, detail: errorStr },
+      { error: message },
       { status: 500 }
     );
   }

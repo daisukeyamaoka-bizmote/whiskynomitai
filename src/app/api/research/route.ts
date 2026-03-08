@@ -131,7 +131,7 @@ food_pairingsは5つ提供してください。具体的な料理名やおつま
     }
 
     return NextResponse.json(
-      { error: errorMessage, detail: errorStr },
+      { error: errorMessage },
       { status: 500 }
     );
   }
