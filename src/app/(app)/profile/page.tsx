@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import Image from "next/image";
 import {
   LogOut,
   Wine,
@@ -17,6 +18,11 @@ import {
   MapPin,
   Compass,
   Crown,
+  Edit3,
+  Camera,
+  X,
+  Check,
+  Link as LinkIcon,
 } from "lucide-react";
 
 interface FlavorStat {
@@ -62,36 +68,107 @@ interface DashboardData {
   aiAnalysis: AiAnalysis | null;
 }
 
+interface ProfileData {
+  email: string;
+  full_name: string;
+  display_name: string;
+  bio: string;
+  avatar_url: string;
+  website: string;
+  twitter: string;
+  instagram: string;
+}
+
 export default function ProfilePage() {
-  const [email, setEmail] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [profile, setProfile] = useState<ProfileData | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<ProfileData>>({});
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
-    fetchProfile();
+    fetchData();
   }, []);
 
-  const fetchProfile = async () => {
+  const fetchData = async () => {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        setEmail(user.email || "");
-        setFullName(user.user_metadata?.full_name || "");
-      }
+      const [profileRes, dashboardRes] = await Promise.all([
+        fetch("/api/profile"),
+        fetch("/api/dashboard"),
+      ]);
 
-      const res = await fetch("/api/dashboard");
-      if (res.ok) {
-        setDashboard(await res.json());
+      if (profileRes.ok) {
+        const p = await profileRes.json();
+        setProfile(p);
+        setEditForm(p);
+      }
+      if (dashboardRes.ok) {
+        setDashboard(await dashboardRes.json());
       }
     } catch (err) {
       console.error("Profile fetch error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
+      });
+      if (res.ok) {
+        setProfile({ ...profile!, ...editForm } as ProfileData);
+        setEditing(false);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append(
+        "file",
+        new File([file], `avatar_${Date.now()}.jpg`, { type: file.type })
+      );
+
+      const uploadRes = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (uploadRes.ok) {
+        const { url } = await uploadRes.json();
+        setEditForm((prev) => ({ ...prev, avatar_url: url }));
+
+        // Save immediately
+        await fetch("/api/profile", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ avatar_url: url }),
+        });
+        setProfile((prev) => prev ? { ...prev, avatar_url: url } : prev);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -109,6 +186,9 @@ export default function ProfilePage() {
     );
   }
 
+  const displayName = profile?.display_name || profile?.full_name || "";
+  const email = profile?.email || "";
+
   const maxFlavorCount = dashboard
     ? Math.max(...dashboard.topFlavors.map((f) => f.count), 1)
     : 1;
@@ -120,27 +200,212 @@ export default function ProfilePage() {
     : 1;
 
   return (
-    <div className="py-4 space-y-5">
+    <div className="py-4 space-y-5 animate-fadeIn">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-whiskey-text">マイページ</h1>
+        {!editing && (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-1.5 glass-tag px-3 py-1.5 text-whiskey-gold text-xs font-bold active:scale-95 transition-transform"
+          >
+            <Edit3 size={12} />
+            編集
+          </button>
+        )}
       </div>
 
-      {/* User Card */}
-      <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-whiskey-gold/10 border border-whiskey-gold/20 flex items-center justify-center">
-            <span className="text-whiskey-gold font-bold text-lg">
-              {(fullName || email).charAt(0).toUpperCase()}
-            </span>
+      {/* Profile Edit Modal */}
+      {editing && (
+        <div className="fixed inset-0 glass-overlay z-50 flex items-end justify-center animate-fadeIn">
+          <div className="w-full max-w-[480px] glass-card !rounded-b-none !rounded-t-2xl max-h-[85vh] flex flex-col animate-slideUp">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-whiskey-border/50">
+              <button
+                onClick={() => { setEditing(false); setEditForm(profile || {}); }}
+                className="text-whiskey-muted hover:text-whiskey-text transition-all duration-200"
+              >
+                <X size={20} />
+              </button>
+              <h3 className="text-sm font-bold text-whiskey-text">
+                プロフィール編集
+              </h3>
+              <button
+                onClick={handleSaveProfile}
+                disabled={saving}
+                className="text-whiskey-gold font-bold text-sm flex items-center gap-1 active:scale-90 transition-transform disabled:opacity-50"
+              >
+                {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                保存
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-5">
+              {/* Avatar */}
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  <div className="w-24 h-24 rounded-full overflow-hidden glass-card flex items-center justify-center animate-pulse-glow">
+                    {editForm.avatar_url ? (
+                      <Image
+                        src={editForm.avatar_url}
+                        alt="プロフィール画像"
+                        width={96}
+                        height={96}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-whiskey-gold font-bold text-3xl">
+                        {(displayName || email).charAt(0).toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                    className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full glass-button text-whiskey-bg flex items-center justify-center active:scale-90 transition-transform"
+                  >
+                    {uploadingAvatar ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Camera size={14} />
+                    )}
+                  </button>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                </div>
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block text-xs text-whiskey-muted mb-1.5">表示名</label>
+                <input
+                  type="text"
+                  value={editForm.display_name || ""}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, display_name: e.target.value }))}
+                  placeholder="ニックネーム"
+                  className="w-full glass-input px-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50"
+                />
+              </div>
+
+              {/* Full Name */}
+              <div>
+                <label className="block text-xs text-whiskey-muted mb-1.5">名前</label>
+                <input
+                  type="text"
+                  value={editForm.full_name || ""}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, full_name: e.target.value }))}
+                  placeholder="お名前"
+                  className="w-full glass-input px-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50"
+                />
+              </div>
+
+              {/* Bio */}
+              <div>
+                <label className="block text-xs text-whiskey-muted mb-1.5">自己紹介</label>
+                <textarea
+                  value={editForm.bio || ""}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, bio: e.target.value }))}
+                  placeholder="ウイスキーへの想いなど..."
+                  className="w-full glass-input px-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50 min-h-[80px] resize-none"
+                />
+              </div>
+
+              {/* Links */}
+              <div className="space-y-3">
+                <label className="block text-xs text-whiskey-muted">リンク</label>
+                <div className="relative">
+                  <LinkIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-whiskey-muted" />
+                  <input
+                    type="url"
+                    value={editForm.website || ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, website: e.target.value }))}
+                    placeholder="https://example.com"
+                    className="w-full glass-input pl-9 pr-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50"
+                  />
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-whiskey-muted text-xs">𝕏</span>
+                  <input
+                    type="text"
+                    value={editForm.twitter || ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, twitter: e.target.value }))}
+                    placeholder="@username"
+                    className="w-full glass-input pl-9 pr-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50"
+                  />
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-whiskey-muted text-xs">IG</span>
+                  <input
+                    type="text"
+                    value={editForm.instagram || ""}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, instagram: e.target.value }))}
+                    placeholder="@username"
+                    className="w-full glass-input pl-9 pr-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex-1">
-            {fullName && (
-              <p className="text-sm font-bold text-whiskey-text">{fullName}</p>
+        </div>
+      )}
+
+      {/* User Card */}
+      <div className="glass-card p-4">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-full overflow-hidden glass-card-gold flex items-center justify-center flex-shrink-0 animate-pulse-glow">
+            {profile?.avatar_url ? (
+              <Image
+                src={profile.avatar_url}
+                alt="プロフィール画像"
+                width={64}
+                height={64}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-whiskey-gold font-bold text-2xl">
+                {(displayName || email).charAt(0).toUpperCase()}
+              </span>
             )}
-            <p className="text-xs text-whiskey-muted">{email}</p>
+          </div>
+          <div className="flex-1 min-w-0">
+            {displayName && (
+              <p className="text-base font-bold text-whiskey-text truncate">{displayName}</p>
+            )}
+            <p className="text-xs text-whiskey-muted truncate">{email}</p>
+            {profile?.bio && (
+              <p className="text-xs text-whiskey-text/80 mt-1 line-clamp-2">{profile.bio}</p>
+            )}
+            {/* Links */}
+            {(profile?.website || profile?.twitter || profile?.instagram) && (
+              <div className="flex items-center gap-3 mt-2">
+                {profile?.website && (
+                  <a href={profile.website} target="_blank" rel="noopener noreferrer"
+                    className="text-whiskey-gold/60 hover:text-whiskey-gold transition-colors">
+                    <LinkIcon size={14} />
+                  </a>
+                )}
+                {profile?.twitter && (
+                  <a href={`https://x.com/${profile.twitter.replace('@', '')}`} target="_blank" rel="noopener noreferrer"
+                    className="text-whiskey-gold/60 hover:text-whiskey-gold transition-colors text-xs font-bold">
+                    𝕏
+                  </a>
+                )}
+                {profile?.instagram && (
+                  <a href={`https://instagram.com/${profile.instagram.replace('@', '')}`} target="_blank" rel="noopener noreferrer"
+                    className="text-whiskey-gold/60 hover:text-whiskey-gold transition-colors text-xs font-bold">
+                    IG
+                  </a>
+                )}
+              </div>
+            )}
             {dashboard && (
-              <p className="text-xs text-whiskey-muted">
+              <p className="text-xs text-whiskey-muted mt-1">
                 {dashboard.total}本のウイスキーを記録
               </p>
             )}
@@ -149,10 +414,10 @@ export default function ProfilePage() {
       </div>
 
       {dashboard && dashboard.total > 0 ? (
-        <>
+        <div className="space-y-5 stagger-children">
           {/* AI Personality Card */}
           {dashboard.aiAnalysis && (
-            <div className="bg-gradient-to-br from-whiskey-gold/10 to-whiskey-gold/5 border border-whiskey-gold/20 rounded-lg p-4 space-y-3">
+            <div className="glass-card-gold p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Sparkles size={16} className="text-whiskey-gold" />
                 <span className="text-xs font-bold text-whiskey-gold uppercase tracking-wider">
@@ -184,21 +449,21 @@ export default function ProfilePage() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-3 text-center space-y-1">
+            <div className="glass-card p-3 text-center space-y-1">
               <Wine size={18} className="text-whiskey-gold mx-auto" />
               <p className="text-lg font-bold text-whiskey-text">
                 {dashboard.total}
               </p>
               <p className="text-xs text-whiskey-muted">記録数</p>
             </div>
-            <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-3 text-center space-y-1">
+            <div className="glass-card p-3 text-center space-y-1">
               <Star size={18} className="text-whiskey-gold mx-auto" />
               <p className="text-lg font-bold text-whiskey-text">
                 {dashboard.avgRating}
               </p>
               <p className="text-xs text-whiskey-muted">平均評価</p>
             </div>
-            <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-3 text-center space-y-1">
+            <div className="glass-card p-3 text-center space-y-1">
               <MapPin size={18} className="text-whiskey-gold mx-auto" />
               <p className="text-lg font-bold text-whiskey-text">
                 {dashboard.regionBreakdown.length}
@@ -208,7 +473,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Rating Distribution */}
-          <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+          <div className="glass-card p-4 space-y-3">
             <div className="flex items-center gap-2">
               <BarChart3 size={16} className="text-whiskey-gold" />
               <h2 className="text-sm font-bold text-whiskey-gold">
@@ -228,9 +493,9 @@ export default function ProfilePage() {
                     <span className="text-xs text-whiskey-muted w-5 text-right">
                       {rating}
                     </span>
-                    <div className="flex-1 h-4 bg-whiskey-bg rounded-full overflow-hidden">
+                    <div className="flex-1 h-4 bg-whiskey-bg/50 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-whiskey-gold/60 rounded-full transition-all duration-500"
+                        className="h-full bg-gradient-to-r from-whiskey-gold/40 to-whiskey-gold/70 rounded-full transition-all duration-700 ease-out"
                         style={{ width: `${width}%` }}
                       />
                     </div>
@@ -245,7 +510,7 @@ export default function ProfilePage() {
 
           {/* Top Flavors */}
           {dashboard.topFlavors.length > 0 && (
-            <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+            <div className="glass-card p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Target size={16} className="text-whiskey-gold" />
                 <h2 className="text-sm font-bold text-whiskey-gold">
@@ -261,19 +526,19 @@ export default function ProfilePage() {
                     <span className="text-sm text-whiskey-text w-24 truncate">
                       {flavor.name}
                     </span>
-                    <div className="flex-1 h-3 bg-whiskey-bg rounded-full overflow-hidden">
+                    <div className="flex-1 h-3 bg-whiskey-bg/50 rounded-full overflow-hidden">
                       <div
-                        className="h-full rounded-full transition-all duration-500"
+                        className="h-full rounded-full transition-all duration-700 ease-out"
                         style={{
                           width: `${Math.round((flavor.count / maxFlavorCount) * 100)}%`,
-                          backgroundColor:
+                          background:
                             i === 0
-                              ? "rgb(212, 175, 55)"
+                              ? "linear-gradient(90deg, rgba(212,175,55,0.6), rgba(212,175,55,1))"
                               : i === 1
-                                ? "rgba(212, 175, 55, 0.7)"
+                                ? "linear-gradient(90deg, rgba(212,175,55,0.4), rgba(212,175,55,0.7))"
                                 : i === 2
-                                  ? "rgba(212, 175, 55, 0.5)"
-                                  : "rgba(212, 175, 55, 0.3)",
+                                  ? "linear-gradient(90deg, rgba(212,175,55,0.3), rgba(212,175,55,0.5))"
+                                  : "linear-gradient(90deg, rgba(212,175,55,0.2), rgba(212,175,55,0.3))",
                         }}
                       />
                     </div>
@@ -288,9 +553,8 @@ export default function ProfilePage() {
 
           {/* Type & Region Breakdown */}
           <div className="grid grid-cols-1 gap-4">
-            {/* Type */}
             {dashboard.typeBreakdown.length > 0 && (
-              <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+              <div className="glass-card p-4 space-y-3">
                 <h2 className="text-sm font-bold text-whiskey-gold">
                   タイプ別
                 </h2>
@@ -320,9 +584,8 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Region */}
             {dashboard.regionBreakdown.length > 0 && (
-              <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+              <div className="glass-card p-4 space-y-3">
                 <h2 className="text-sm font-bold text-whiskey-gold">
                   産地別
                 </h2>
@@ -355,7 +618,7 @@ export default function ProfilePage() {
 
           {/* Favorites */}
           {dashboard.favorites.length > 0 && (
-            <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+            <div className="glass-card p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Award size={16} className="text-whiskey-gold" />
                 <h2 className="text-sm font-bold text-whiskey-gold">
@@ -393,7 +656,7 @@ export default function ProfilePage() {
 
           {/* Rating Trend */}
           {dashboard.ratingTrend.length > 1 && (
-            <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-4 space-y-3">
+            <div className="glass-card p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <TrendingUp size={16} className="text-whiskey-gold" />
                 <h2 className="text-sm font-bold text-whiskey-gold">
@@ -412,7 +675,7 @@ export default function ProfilePage() {
                         {item.avgRating}
                       </span>
                       <div
-                        className="w-full bg-whiskey-gold/50 rounded-t transition-all duration-500"
+                        className="w-full bg-gradient-to-t from-whiskey-gold/30 to-whiskey-gold/60 rounded-t transition-all duration-700 ease-out"
                         style={{
                           height: `${height}%`,
                           minHeight: "4px",
@@ -431,7 +694,7 @@ export default function ProfilePage() {
           {/* Link to Suggest */}
           <Link
             href="/suggest"
-            className="block bg-gradient-to-r from-whiskey-gold/20 to-whiskey-gold/10 border border-whiskey-gold/30 rounded-lg p-4 hover:from-whiskey-gold/30 hover:to-whiskey-gold/20 transition-all"
+            className="block glass-card-gold p-4 hover:scale-[1.01] active:scale-[0.99] transition-transform duration-200"
           >
             <div className="flex items-center gap-3">
               <Sparkles size={20} className="text-whiskey-gold" />
@@ -445,16 +708,16 @@ export default function ProfilePage() {
               </div>
             </div>
           </Link>
-        </>
+        </div>
       ) : (
-        <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-6 text-center space-y-3">
-          <Wine size={32} className="text-whiskey-muted mx-auto" />
+        <div className="glass-card p-6 text-center space-y-3 animate-fadeInScale">
+          <Wine size={32} className="text-whiskey-muted mx-auto animate-float" />
           <p className="text-whiskey-muted text-sm">
             ウイスキーを記録して、あなたの好みを分析しましょう
           </p>
           <Link
             href="/record"
-            className="inline-block bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
+            className="inline-block glass-button text-whiskey-bg font-bold px-6 py-2.5 text-sm"
           >
             最初の1本を記録する
           </Link>
@@ -464,7 +727,7 @@ export default function ProfilePage() {
       {/* Plan Link */}
       <Link
         href="/plan"
-        className="block bg-whiskey-card border border-whiskey-border rounded-lg p-4 hover:border-whiskey-gold/30 transition-colors"
+        className="block glass-card p-4 hover:scale-[1.01] active:scale-[0.99] transition-transform duration-200"
       >
         <div className="flex items-center gap-3">
           <Crown size={20} className="text-whiskey-gold" />
@@ -480,7 +743,7 @@ export default function ProfilePage() {
       {/* Logout */}
       <button
         onClick={handleLogout}
-        className="w-full border border-whiskey-border text-whiskey-muted py-3 rounded-lg hover:bg-whiskey-card hover:text-red-400 transition-colors flex items-center justify-center gap-2"
+        className="w-full glass-card !border-red-900/20 text-whiskey-muted py-3 hover:text-red-400 transition-all duration-300 flex items-center justify-center gap-2 active:scale-[0.98]"
       >
         <LogOut size={16} />
         ログアウト

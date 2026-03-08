@@ -124,7 +124,7 @@ export default function CollectionPage() {
   ];
 
   return (
-    <div className="py-4 space-y-4">
+    <div className="py-4 space-y-4 animate-fadeIn">
       <h1 className="text-xl font-bold text-whiskey-text">コレクション</h1>
 
       {/* Search */}
@@ -139,15 +139,15 @@ export default function CollectionPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="名前・蒸留所で検索"
-            className="w-full bg-whiskey-card border border-whiskey-border rounded-lg pl-9 pr-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+            className="w-full glass-input pl-9 pr-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50"
           />
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`px-3 rounded-lg border transition-colors ${
+          className={`px-3 rounded-xl border transition-all duration-300 active:scale-90 ${
             showFilters
               ? "bg-whiskey-gold/10 border-whiskey-gold text-whiskey-gold"
-              : "bg-whiskey-card border-whiskey-border text-whiskey-muted hover:text-whiskey-gold"
+              : "glass-card !border-whiskey-border/50 text-whiskey-muted hover:text-whiskey-gold"
           }`}
           aria-label="フィルター"
         >
@@ -157,7 +157,7 @@ export default function CollectionPage() {
 
       {/* Filters */}
       {showFilters && (
-        <div className="bg-whiskey-card border border-whiskey-border rounded-lg p-3 space-y-3">
+        <div className="glass-card p-3 space-y-3 animate-slideDown">
           <div>
             <label className="block text-xs text-whiskey-muted mb-1">
               産地
@@ -165,7 +165,7 @@ export default function CollectionPage() {
             <select
               value={regionFilter}
               onChange={(e) => setRegionFilter(e.target.value)}
-              className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-sm text-whiskey-text focus:outline-none focus:border-whiskey-gold"
+              className="w-full glass-input px-3 py-2 text-sm text-whiskey-text"
             >
               <option value="">すべて</option>
               {regions.map((r) => (
@@ -182,7 +182,7 @@ export default function CollectionPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-sm text-whiskey-text focus:outline-none focus:border-whiskey-gold"
+              className="w-full glass-input px-3 py-2 text-sm text-whiskey-text"
             >
               <option value="">すべて</option>
               {types.map((t) => (
@@ -199,7 +199,7 @@ export default function CollectionPage() {
             <select
               value={minRating}
               onChange={(e) => setMinRating(e.target.value)}
-              className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-sm text-whiskey-text focus:outline-none focus:border-whiskey-gold"
+              className="w-full glass-input px-3 py-2 text-sm text-whiskey-text"
             >
               <option value="">すべて</option>
               <option value="8">8以上</option>
@@ -214,7 +214,7 @@ export default function CollectionPage() {
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              className="w-full bg-whiskey-bg border border-whiskey-border rounded-lg px-3 py-2 text-sm text-whiskey-text focus:outline-none focus:border-whiskey-gold"
+              className="w-full glass-input px-3 py-2 text-sm text-whiskey-text"
             >
               <option value="created_at">日付順</option>
               <option value="rating">評価順</option>
@@ -230,14 +230,14 @@ export default function CollectionPage() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-whiskey-card border border-whiskey-border rounded-lg p-3 animate-pulse"
+              className="glass-card p-3"
             >
               <div className="flex gap-3">
-                <div className="w-16 h-16 rounded-lg bg-whiskey-border" />
+                <div className="w-16 h-16 rounded-xl shimmer" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-whiskey-border rounded w-3/4" />
-                  <div className="h-3 bg-whiskey-border rounded w-1/2" />
-                  <div className="h-3 bg-whiskey-border rounded w-1/4" />
+                  <div className="h-4 shimmer rounded w-3/4" />
+                  <div className="h-3 shimmer rounded w-1/2" />
+                  <div className="h-3 shimmer rounded w-1/4" />
                 </div>
               </div>
             </div>
@@ -247,8 +247,8 @@ export default function CollectionPage() {
 
       {/* Empty State */}
       {!loading && records.length === 0 && (
-        <div className="flex flex-col items-center gap-4 py-12">
-          <div className="w-20 h-20 rounded-full bg-whiskey-card border border-whiskey-border flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 py-12 animate-fadeInScale">
+          <div className="w-20 h-20 rounded-full glass-card flex items-center justify-center animate-float">
             <Camera size={32} className="text-whiskey-muted" />
           </div>
           <p className="text-whiskey-muted text-center text-sm">
@@ -256,7 +256,7 @@ export default function CollectionPage() {
           </p>
           <Link
             href="/record"
-            className="bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
+            className="glass-button text-whiskey-bg font-bold px-6 py-2.5 text-sm"
           >
             最初の一杯を記録する
           </Link>
@@ -265,12 +265,12 @@ export default function CollectionPage() {
 
       {/* Records List */}
       {!loading && records.length > 0 && (
-        <div className="space-y-3">
+        <div className="space-y-3 stagger-children">
           {records.map((record) => (
             <Link
               key={record.id}
               href={`/collection/${record.id}`}
-              className="block bg-whiskey-card border border-whiskey-border rounded-lg p-3 hover:border-whiskey-gold/30 transition-colors"
+              className="block glass-card p-3 active:scale-[0.98] transition-transform duration-200"
             >
               <div className="flex gap-3">
                 {record.photo_url ? (
@@ -279,10 +279,10 @@ export default function CollectionPage() {
                     alt={record.name}
                     width={64}
                     height={64}
-                    className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                    className="w-16 h-16 rounded-xl object-cover flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-lg bg-whiskey-border flex-shrink-0 flex items-center justify-center text-whiskey-muted text-xs">
+                  <div className="w-16 h-16 rounded-xl bg-whiskey-border/30 flex-shrink-0 flex items-center justify-center text-whiskey-muted text-xs">
                     No Photo
                   </div>
                 )}

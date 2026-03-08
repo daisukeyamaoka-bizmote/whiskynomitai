@@ -255,35 +255,35 @@ export default function TimelinePage() {
   };
 
   return (
-    <div className="py-4 space-y-4">
+    <div className="py-4 space-y-4 animate-fadeIn">
       <h1 className="text-xl font-bold text-whiskey-text">ウイ活</h1>
 
       {/* Tab Switcher */}
-      <div className="flex border-b border-whiskey-border">
+      <div className="flex glass-card overflow-hidden !rounded-xl">
         <button
           onClick={() => setTab("all")}
-          className={`flex-1 py-2.5 text-sm font-bold transition-colors relative ${
+          className={`flex-1 py-2.5 text-sm font-bold transition-all duration-300 relative ${
             tab === "all"
-              ? "text-whiskey-gold"
+              ? "text-whiskey-gold bg-whiskey-gold/5"
               : "text-whiskey-muted hover:text-whiskey-text"
           }`}
         >
           みんな
           {tab === "all" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-whiskey-gold" />
+            <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-whiskey-gold rounded-full tab-indicator" />
           )}
         </button>
         <button
           onClick={() => setTab("following")}
-          className={`flex-1 py-2.5 text-sm font-bold transition-colors relative ${
+          className={`flex-1 py-2.5 text-sm font-bold transition-all duration-300 relative ${
             tab === "following"
-              ? "text-whiskey-gold"
+              ? "text-whiskey-gold bg-whiskey-gold/5"
               : "text-whiskey-muted hover:text-whiskey-text"
           }`}
         >
           お気に入り
           {tab === "following" && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-whiskey-gold" />
+            <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-whiskey-gold rounded-full tab-indicator" />
           )}
         </button>
       </div>
@@ -297,8 +297,8 @@ export default function TimelinePage() {
 
       {/* Empty State */}
       {!loading && posts.length === 0 && (
-        <div className="flex flex-col items-center gap-4 py-12">
-          <div className="w-20 h-20 rounded-full bg-whiskey-card border border-whiskey-border flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 py-12 animate-fadeInScale">
+          <div className="w-20 h-20 rounded-full glass-card flex items-center justify-center animate-float">
             <Wine size={32} className="text-whiskey-muted" />
           </div>
           <p className="text-whiskey-muted text-sm text-center">
@@ -311,7 +311,7 @@ export default function TimelinePage() {
 
       {/* Posts */}
       {!loading && (
-        <div className="space-y-4">
+        <div className="space-y-4 stagger-children">
           {posts.map((post) => (
             <PostCard
               key={post.id}
@@ -329,7 +329,7 @@ export default function TimelinePage() {
             <button
               onClick={handleLoadMore}
               disabled={loadingMore}
-              className="w-full py-3 text-sm text-whiskey-muted hover:text-whiskey-gold transition-colors flex items-center justify-center gap-2"
+              className="w-full py-3 text-sm text-whiskey-muted hover:text-whiskey-gold transition-all duration-300 flex items-center justify-center gap-2 hover:gap-3"
             >
               {loadingMore ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -344,16 +344,16 @@ export default function TimelinePage() {
 
       {/* Comment Modal */}
       {commentPostId && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center">
-          <div className="w-full max-w-[480px] bg-whiskey-card border-t border-whiskey-border rounded-t-2xl max-h-[70vh] flex flex-col">
+        <div className="fixed inset-0 glass-overlay z-50 flex items-end justify-center animate-fadeIn">
+          <div className="w-full max-w-[480px] glass-card !rounded-b-none !rounded-t-2xl max-h-[70vh] flex flex-col animate-slideUp">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-whiskey-border">
+            <div className="flex items-center justify-between p-4 border-b border-whiskey-border/50">
               <h3 className="text-sm font-bold text-whiskey-text">
                 コメント
               </h3>
               <button
                 onClick={() => setCommentPostId(null)}
-                className="text-whiskey-muted hover:text-whiskey-text"
+                className="text-whiskey-muted hover:text-whiskey-text transition-all duration-200 hover:scale-110 active:scale-90"
               >
                 <X size={20} />
               </button>
@@ -375,9 +375,9 @@ export default function TimelinePage() {
                 </p>
               )}
               {comments.map((comment) => (
-                <div key={comment.id} className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-whiskey-border flex items-center justify-center flex-shrink-0">
-                    <span className="text-whiskey-muted text-xs font-bold">
+                <div key={comment.id} className="flex gap-3 animate-fadeInUp">
+                  <div className="w-8 h-8 rounded-full bg-whiskey-gold/5 border border-whiskey-gold/10 flex items-center justify-center flex-shrink-0">
+                    <span className="text-whiskey-gold/70 text-xs font-bold">
                       {comment.user_name.charAt(0)}
                     </span>
                   </div>
@@ -399,13 +399,13 @@ export default function TimelinePage() {
             </div>
 
             {/* Comment Input */}
-            <div className="p-4 border-t border-whiskey-border flex gap-2">
+            <div className="p-4 border-t border-whiskey-border/50 flex gap-2">
               <input
                 type="text"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
                 placeholder="コメントを入力..."
-                className="flex-1 bg-whiskey-bg border border-whiskey-border rounded-full px-4 py-2 text-sm text-whiskey-text placeholder:text-whiskey-muted/50 focus:outline-none focus:border-whiskey-gold transition-colors"
+                className="flex-1 glass-input rounded-full px-4 py-2 text-sm text-whiskey-text placeholder:text-whiskey-muted/50"
                 onKeyDown={(e) => {
                   if (
                     e.key === "Enter" &&
@@ -418,7 +418,7 @@ export default function TimelinePage() {
               <button
                 onClick={submitComment}
                 disabled={!commentText.trim() || submittingComment}
-                className="w-10 h-10 rounded-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg flex items-center justify-center transition-colors disabled:opacity-30"
+                className="w-10 h-10 rounded-full glass-button text-whiskey-bg flex items-center justify-center disabled:opacity-30 active:scale-90"
               >
                 {submittingComment ? (
                   <Loader2 size={16} className="animate-spin" />
@@ -450,11 +450,11 @@ function PostCard({
   const record = post.tasting_records;
 
   return (
-    <div className="bg-whiskey-card border border-whiskey-border rounded-lg overflow-hidden">
+    <div className="glass-card overflow-hidden">
       {/* User Header */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-full bg-whiskey-gold/10 border border-whiskey-gold/20 flex items-center justify-center">
+          <div className="w-9 h-9 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center">
             <span className="text-whiskey-gold text-sm font-bold">
               {post.user_name.charAt(0)}
             </span>
@@ -471,10 +471,10 @@ function PostCard({
         {!post.is_own && (
           <button
             onClick={onFollow}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-all duration-300 active:scale-90 ${
               post.is_following
-                ? "bg-whiskey-border text-whiskey-muted"
-                : "bg-whiskey-gold/10 text-whiskey-gold border border-whiskey-gold/20"
+                ? "bg-whiskey-border/50 text-whiskey-muted"
+                : "glass-tag text-whiskey-gold"
             }`}
           >
             {post.is_following ? (
@@ -521,7 +521,7 @@ function PostCard({
               </p>
             </div>
             <div className="flex-shrink-0 ml-2">
-              <div className="bg-whiskey-gold/10 border border-whiskey-gold/20 rounded-lg px-2 py-0.5 text-center">
+              <div className="glass-tag !rounded-lg px-2 py-0.5 text-center">
                 <span className="text-whiskey-gold font-bold text-sm">
                   {record.rating}/10
                 </span>
@@ -536,7 +536,7 @@ function PostCard({
             {record.flavor_tags.map((tag) => (
               <span
                 key={tag}
-                className="px-2 py-0.5 bg-whiskey-gold/10 text-whiskey-gold text-xs rounded-full border border-whiskey-gold/20"
+                className="glass-tag px-2 py-0.5 text-whiskey-gold text-xs"
               >
                 {tag}
               </span>
@@ -555,7 +555,7 @@ function PostCard({
         <div className="flex items-center gap-5 pt-1">
           <button
             onClick={onLike}
-            className={`flex items-center gap-1.5 transition-colors ${
+            className={`flex items-center gap-1.5 transition-all duration-300 active:scale-125 ${
               post.is_liked
                 ? "text-red-400"
                 : "text-whiskey-muted hover:text-red-400"
