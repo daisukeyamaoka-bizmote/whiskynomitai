@@ -20,9 +20,11 @@ import {
   Landmark,
   FlaskConical,
   Wine,
+  Share2,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import ShareModal from "@/components/ShareModal";
 
 interface FoodPairing {
   name: string;
@@ -71,6 +73,7 @@ export default function RecordDetailPage({
   const [error, setError] = useState("");
   const [researching, setResearching] = useState(false);
   const [researchOpen, setResearchOpen] = useState(true);
+  const [showShare, setShowShare] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -585,17 +588,37 @@ export default function RecordDetailPage({
               編集
             </button>
             <button
+              onClick={() => setShowShare(true)}
+              className="flex-1 border border-whiskey-gold/30 text-whiskey-gold py-3 rounded-lg hover:bg-whiskey-gold/10 transition-colors flex items-center justify-center gap-2"
+            >
+              <Share2 size={16} />
+              シェア
+            </button>
+            <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex-1 border border-red-900/50 text-red-400 py-3 rounded-lg hover:bg-red-950/30 transition-colors flex items-center justify-center gap-2"
+              className="px-4 border border-red-900/50 text-red-400 py-3 rounded-lg hover:bg-red-950/30 transition-colors flex items-center justify-center"
             >
               <Trash2 size={16} />
-              削除
             </button>
           </>
         )}
       </div>
 
       {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+
+      {/* Share Modal */}
+      {showShare && (
+        <ShareModal
+          name={record.name}
+          rating={record.rating}
+          distillery={record.distillery}
+          region={record.region}
+          type={record.type}
+          flavorTags={record.flavor_tags}
+          note={record.note}
+          onClose={() => setShowShare(false)}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
