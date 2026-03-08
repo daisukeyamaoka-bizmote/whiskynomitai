@@ -182,6 +182,8 @@ export default function MyPage() {
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestError, setSuggestError] = useState("");
   const [suggestNeedsUpgrade, setSuggestNeedsUpgrade] = useState(false);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followerCount, setFollowerCount] = useState(0);
   const router = useRouter();
   const supabase = createClient();
 
@@ -236,6 +238,21 @@ export default function MyPage() {
     if (sharesRes?.ok) {
       const sd = await sharesRes.json();
       setStats((prev) => ({ ...prev, shareCount: sd.count || 0 }));
+    }
+
+    // Fetch follow counts
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const [followingRes, followerRes] = await Promise.all([
+          supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("follower_id", user.id),
+          supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("following_id", user.id),
+        ]);
+        setFollowingCount(followingRes.count || 0);
+        setFollowerCount(followerRes.count || 0);
+      }
+    } catch {
+      // ignore
     }
 
     setLoading(false);
@@ -440,6 +457,21 @@ export default function MyPage() {
             {dashboard && <p className="text-xs text-whiskey-muted mt-1">{dashboard.total}本のウイスキーを記録</p>}
           </div>
         </div>
+        {/* Follow/Follower Counts */}
+        <div className="flex items-center justify-around mt-4 pt-3 border-t border-whiskey-border/50">
+          <div className="text-center">
+            <p className="text-base font-bold text-whiskey-text">{followingCount}</p>
+            <p className="text-xs text-whiskey-muted">フォロー</p>
+          </div>
+          <div className="text-center">
+            <p className="text-base font-bold text-whiskey-text">{followerCount}</p>
+            <p className="text-xs text-whiskey-muted">フォロワー</p>
+          </div>
+          <div className="text-center">
+            <p className="text-base font-bold text-whiskey-text">{dashboard?.total || 0}</p>
+            <p className="text-xs text-whiskey-muted">記録</p>
+          </div>
+        </div>
       </div>
 
       {stats.total === 0 ? (
@@ -538,19 +570,6 @@ export default function MyPage() {
               <p className="text-xs text-whiskey-muted">産地数</p>
             </div>
           </div>
-
-          {/* CTA Banner */}
-          <Link href="/record" className="block glass-card p-4 active:scale-[0.98]">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-whiskey-gold/10 flex items-center justify-center flex-shrink-0">
-                <Camera size={20} className="text-whiskey-gold" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-whiskey-text">ボトルを撮影して記録する</p>
-                <p className="text-xs text-whiskey-muted">AIが自動でウイスキーを識別します</p>
-              </div>
-            </div>
-          </Link>
 
           {/* Taste Profile */}
           {preferences && preferences.total_tastings >= 2 && (preferences.top_flavors.length > 0 || preferences.top_regions.length > 0) && (

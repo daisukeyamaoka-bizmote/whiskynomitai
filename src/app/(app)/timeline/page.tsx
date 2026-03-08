@@ -14,6 +14,7 @@ import {
   GlassWater,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface TastingRecord {
   id: string;
@@ -481,7 +482,7 @@ function PostCard({
     <div className="glass-card overflow-hidden">
       {/* User Header */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2">
-        <div className="flex items-center gap-2.5">
+        <Link href={`/user/${post.user_id}`} className="flex items-center gap-2.5 active:opacity-70">
           <div className="w-9 h-9 rounded-full bg-whiskey-gold/8 border border-whiskey-gold/15 flex items-center justify-center">
             <span className="text-whiskey-gold text-sm font-bold">
               {post.user_name.charAt(0)}
@@ -495,7 +496,7 @@ function PostCard({
               {formatTime(post.created_at)}
             </p>
           </div>
-        </div>
+        </Link>
         {!post.is_own && (
           <button
             onClick={onFollow}
