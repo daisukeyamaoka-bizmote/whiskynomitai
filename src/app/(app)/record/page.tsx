@@ -11,6 +11,7 @@ import {
   Crown,
   Send,
   SkipForward,
+  ImagePlus,
 } from "lucide-react";
 import Link from "next/link";
 import { resizeImage } from "@/lib/image";
@@ -47,7 +48,8 @@ export default function RecordPage() {
   const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
   const [shareComment, setShareComment] = useState("");
   const [sharing, setSharing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const albumInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -216,21 +218,40 @@ export default function RecordPage() {
             <Camera size={48} className="text-whiskey-muted" />
           </div>
           <p className="text-whiskey-muted text-center text-sm">
-            ウイスキーボトルを撮影して
+            ウイスキーボトルを撮影するか
             <br />
-            AIが自動で情報を識別します
+            アルバムから写真を選んでください
           </p>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-8 py-3 rounded-lg transition-colors"
-          >
-            ボトルを撮影する
-          </button>
+          <div className="flex flex-col gap-3 w-full max-w-xs">
+            <button
+              onClick={() => cameraInputRef.current?.click()}
+              className="w-full bg-whiskey-gold hover:bg-whiskey-gold-dark text-whiskey-bg font-bold px-8 py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <Camera size={20} />
+              ボトルを撮影する
+            </button>
+            <button
+              onClick={() => albumInputRef.current?.click()}
+              className="w-full border border-whiskey-gold text-whiskey-gold hover:bg-whiskey-gold/10 font-bold px-8 py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2"
+            >
+              <ImagePlus size={20} />
+              アルバムから選ぶ
+            </button>
+          </div>
+          {/* Camera input (with capture attribute for direct camera) */}
           <input
-            ref={fileInputRef}
+            ref={cameraInputRef}
             type="file"
             accept="image/*"
             capture="environment"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+          {/* Album input (no capture attribute to open photo picker) */}
+          <input
+            ref={albumInputRef}
+            type="file"
+            accept="image/*"
             onChange={handleFileSelect}
             className="hidden"
           />
