@@ -62,19 +62,26 @@ export async function GET() {
     (bookmarksRes.data || []).forEach((b) => { allUserIds.add(b.user_id); allPostIds.add(b.post_id); });
     (commentsRes.data || []).forEach((c) => { allUserIds.add(c.user_id); allPostIds.add(c.post_id); });
 
-    // Fetch display names and post whiskey names in parallel
-    const [postNamesResult, ...nameResults] = await Promise.all([
+    // Fetch display names and post whiskey names in parallel (batch, no N+1)
+    const userIdArray = [...allUserIds];
+    const [postNamesResult, profilesResult] = await Promise.all([
       allPostIds.size > 0
         ? supabase.from("timeline_posts").select("id, whiskey_name").in("id", [...allPostIds])
         : Promise.resolve({ data: [] }),
-      ...[...allUserIds].map(async (uid) => {
-        const { data } = await supabase.rpc("get_user_profile_meta", { p_user_id: uid });
-        return { id: uid, name: data?.display_name || "ウイスキーファン", avatar_url: data?.avatar_url || "" };
-      }),
+      userIdArray.length > 0
+        ? supabase
+            .from("user_profiles")
+            .select("id, display_name, avatar_url")
+            .in("id", userIdArray)
+        : Promise.resolve({ data: [] }),
     ]);
 
-    const nameMap = new Map(nameResults.map((n) => [n.id, n.name]));
-    const avatarMap = new Map(nameResults.map((n) => [n.id, n.avatar_url]));
+    const nameMap = new Map<string, string>();
+    const avatarMap = new Map<string, string>();
+    for (const p of (profilesResult.data || []) as { id: string; display_name: string; avatar_url: string }[]) {
+      nameMap.set(p.id, p.display_name || "ウイスキーファン");
+      avatarMap.set(p.id, p.avatar_url || "");
+    }
     const postNameMap = new Map(
       (postNamesResult.data || []).map((p: { id: string; whiskey_name: string }) => [p.id, p.whiskey_name || ""])
     );

@@ -35,16 +35,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get display names for comment authors
+    // Get display names for comment authors (batch query, no N+1)
     const commentUserIds = [...new Set((comments || []).map((c) => c.user_id))];
-    const nameResults = await Promise.all(
-      commentUserIds.map(async (uid) => {
-        const { data } = await supabase.rpc("get_user_profile_meta", { p_user_id: uid });
-        return { id: uid, name: data?.display_name || "ウイスキーファン", avatar_url: data?.avatar_url || "" };
-      })
-    );
-    const nameMap = new Map(nameResults.map((n) => [n.id, n.name]));
-    const avatarMap = new Map(nameResults.map((n) => [n.id, n.avatar_url]));
+    const { data: profiles } = commentUserIds.length > 0
+      ? await supabase
+          .from("user_profiles")
+          .select("id, display_name, avatar_url")
+          .in("id", commentUserIds)
+      : { data: [] };
+    const nameMap = new Map<string, string>();
+    const avatarMap = new Map<string, string>();
+    for (const p of (profiles || []) as { id: string; display_name: string; avatar_url: string }[]) {
+      nameMap.set(p.id, p.display_name || "ウイスキーファン");
+      avatarMap.set(p.id, p.avatar_url || "");
+    }
 
     const enriched = (comments || []).map((c) => ({
       ...c,

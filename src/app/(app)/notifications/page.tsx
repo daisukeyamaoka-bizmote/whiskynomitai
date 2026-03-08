@@ -144,7 +144,19 @@ export default function NotificationsPage() {
   return (
     <div className="py-4 space-y-4 animate-fadeIn">
       {loading && (
-        <WhiskyLoader />
+        <div className="space-y-1">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="glass-card p-3">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-full shimmer flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-3 shimmer rounded w-16" />
+                  <div className="h-4 shimmer rounded w-4/5" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {!loading && notifications.length === 0 && (

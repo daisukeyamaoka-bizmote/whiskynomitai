@@ -15,7 +15,7 @@ export async function GET() {
 
     const { data: bookmarks, error } = await supabase
       .from("user_bookmarks")
-      .select("*")
+      .select("id, post_id, whiskey_name, whiskey_distillery, whiskey_region, whiskey_type, whiskey_rating, whiskey_photo_url, whiskey_flavor_tags, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -27,7 +27,10 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ bookmarks: bookmarks || [] });
+    return NextResponse.json(
+      { bookmarks: bookmarks || [] },
+      { headers: { "Cache-Control": "private, max-age=0, stale-while-revalidate=30" } }
+    );
   } catch (error) {
     console.error("Bookmarks error:", error);
     return NextResponse.json(

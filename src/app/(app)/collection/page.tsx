@@ -41,6 +41,7 @@ export default function CollectionPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [regionFilter, setRegionFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -50,6 +51,14 @@ export default function CollectionPage() {
   const [loadingBookmarks, setLoadingBookmarks] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounce search input (300ms)
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchInput(value);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => setSearch(value), 300);
+  }, []);
 
   const fetchRecords = useCallback(
     async (pageNum: number, append = false) => {
@@ -212,8 +221,8 @@ export default function CollectionPage() {
               />
               <input
                 type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                value={searchInput}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 placeholder="名前・蒸留所で検索"
                 className="w-full glass-input pl-9 pr-3 py-2.5 text-sm text-whiskey-text placeholder:text-whiskey-muted/50"
               />
@@ -378,7 +387,20 @@ export default function CollectionPage() {
       {collectionTab === "tsuginomu" && (
         <>
           {loadingBookmarks && (
-            <WhiskyLoader />
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="glass-card p-3">
+                  <div className="flex gap-3">
+                    <div className="w-16 h-16 rounded-xl shimmer" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 shimmer rounded w-3/4" />
+                      <div className="h-3 shimmer rounded w-1/2" />
+                      <div className="h-3 shimmer rounded w-1/4" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
 
           {!loadingBookmarks && bookmarks.length === 0 && (
