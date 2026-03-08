@@ -346,7 +346,30 @@ export default function TimelinePage() {
         </button>
       </div>
 
-      {loading && <WhiskyLoader text="読み込み中..." />}
+      {loading && (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass-card overflow-hidden">
+              <div className="px-4 pt-3 pb-2 flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full skeleton" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="h-3 w-24 skeleton rounded" />
+                  <div className="h-2 w-16 skeleton rounded" />
+                </div>
+              </div>
+              <div className="aspect-[4/3] skeleton" />
+              <div className="px-4 py-3 space-y-2">
+                <div className="h-4 w-40 skeleton rounded" />
+                <div className="h-3 w-28 skeleton rounded" />
+                <div className="flex gap-1.5 pt-1">
+                  <div className="h-5 w-12 skeleton rounded-full" />
+                  <div className="h-5 w-12 skeleton rounded-full" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {!loading && posts.length === 0 && (
         <div className="flex flex-col items-center gap-4 py-12 animate-fadeInScale">

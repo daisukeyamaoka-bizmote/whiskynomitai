@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Simplified level from record count (matches mypage LEVEL_DEFS)
 function getUserLevel(recordCount: number): { level: number; title: string } {
-  const xp = recordCount * 10; // simplified: 10 XP per record
+  const xp = recordCount * 10;
   const LEVELS = [
     { level: 1, title: "ビギナー", minXp: 0 },
     { level: 2, title: "テイスター", minXp: 30 },
@@ -93,22 +92,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check which posts the current user has liked
     const postIds = (posts || []).map((p) => p.id);
-    let likedPostIds = new Set<string>();
-    if (postIds.length > 0) {
-      const { data: userLikes } = await supabase
-        .from("timeline_likes")
-        .select("post_id")
-        .eq("user_id", user.id)
-        .in("post_id", postIds);
-
-      likedPostIds = new Set((userLikes || []).map((l) => l.post_id));
-    }
-
-    // Check bookmarks, follows, and names in parallel
     const userIds = [...new Set((posts || []).map((p) => p.user_id))];
-    const [followResult, bookmarkResult, ...nameResults] = await Promise.all([
+
+    // Batch all secondary queries in parallel (single query each, no N+1)
+    const [likesResult, followResult, bookmarkResult, profilesResult, recordCountsResult] = await Promise.all([
+      postIds.length > 0
+        ? supabase
+            .from("timeline_likes")
+            .select("post_id")
+            .eq("user_id", user.id)
+            .in("post_id", postIds)
+        : Promise.resolve({ data: [] }),
       userIds.length > 0
         ? supabase
             .from("user_follows")
@@ -123,58 +118,67 @@ export async function GET(request: NextRequest) {
             .eq("user_id", user.id)
             .in("post_id", postIds)
         : Promise.resolve({ data: [] }),
-      // Fetch display names and record counts in parallel
-      ...userIds.map(async (uid) => {
-        const [{ data: meta }, { data: recCount }] = await Promise.all([
-          supabase.rpc("get_user_profile_meta", { p_user_id: uid }),
-          supabase.rpc("get_user_record_count", { p_user_id: uid }),
-        ]);
-        return {
-          id: uid,
-          name: meta?.display_name || "ウイスキーファン",
-          user_handle: meta?.user_handle || "",
-          avatar_url: meta?.avatar_url || "",
-          record_count: recCount || 0,
-        };
-      }),
+      userIds.length > 0
+        ? supabase
+            .from("user_profiles")
+            .select("id, display_name, user_handle, avatar_url")
+            .in("id", userIds)
+        : Promise.resolve({ data: [] }),
+      userIds.length > 0
+        ? supabase
+            .from("tasting_records")
+            .select("user_id")
+            .in("user_id", userIds)
+        : Promise.resolve({ data: [] }),
     ]);
 
+    const likedPostIds = new Set((likesResult.data || []).map((l: { post_id: string }) => l.post_id));
     const followingSet = new Set((followResult.data || []).map((f: { following_id: string }) => f.following_id));
     const bookmarkedPostIds = new Set((bookmarkResult.data || []).map((b: { post_id: string }) => b.post_id));
-    const nameMap = new Map(nameResults.map((n) => [n.id, n.name]));
-    const handleMap = new Map(nameResults.map((n) => [n.id, n.user_handle]));
-    const avatarMap = new Map(nameResults.map((n) => [n.id, n.avatar_url]));
-    const recordCountMap = new Map(nameResults.map((n) => [n.id, n.record_count]));
 
-    // Map to frontend-friendly format
-    const enrichedPosts = (posts || []).map((post) => ({
-      id: post.id,
-      comment: post.comment,
-      likes_count: post.likes_count,
-      comments_count: post.comments_count,
-      created_at: post.created_at,
-      user_id: post.user_id,
-      user_name: nameMap.get(post.user_id) || "ウイスキーファン",
-      user_handle: handleMap.get(post.user_id) || "",
-      user_avatar_url: avatarMap.get(post.user_id) || "",
-      user_level: getUserLevel(recordCountMap.get(post.user_id) || 0),
-      is_liked: likedPostIds.has(post.id),
-      is_bookmarked: bookmarkedPostIds.has(post.id),
-      is_following: followingSet.has(post.user_id),
-      is_own: post.user_id === user.id,
-      tasting_records: {
-        id: post.record_id,
-        name: post.whiskey_name,
-        distillery: post.whiskey_distillery,
-        region: post.whiskey_region,
-        type: post.whiskey_type,
-        rating: post.whiskey_rating,
-        photo_url: post.whiskey_photo_url,
-        flavor_tags: post.whiskey_flavor_tags || [],
-        note: post.whiskey_note,
-        drinking_location: post.whiskey_drinking_location || null,
-      },
-    }));
+    // Build user profile map from batch query
+    const profileMap = new Map<string, { display_name: string; user_handle: string; avatar_url: string }>();
+    for (const p of (profilesResult.data || []) as { id: string; display_name: string; user_handle: string; avatar_url: string }[]) {
+      profileMap.set(p.id, p);
+    }
+
+    // Count records per user from batch result
+    const recordCountMap = new Map<string, number>();
+    for (const r of (recordCountsResult.data || []) as { user_id: string }[]) {
+      recordCountMap.set(r.user_id, (recordCountMap.get(r.user_id) || 0) + 1);
+    }
+
+    const enrichedPosts = (posts || []).map((post) => {
+      const profile = profileMap.get(post.user_id);
+      return {
+        id: post.id,
+        comment: post.comment,
+        likes_count: post.likes_count,
+        comments_count: post.comments_count,
+        created_at: post.created_at,
+        user_id: post.user_id,
+        user_name: profile?.display_name || "ウイスキーファン",
+        user_handle: profile?.user_handle || "",
+        user_avatar_url: profile?.avatar_url || "",
+        user_level: getUserLevel(recordCountMap.get(post.user_id) || 0),
+        is_liked: likedPostIds.has(post.id),
+        is_bookmarked: bookmarkedPostIds.has(post.id),
+        is_following: followingSet.has(post.user_id),
+        is_own: post.user_id === user.id,
+        tasting_records: {
+          id: post.record_id,
+          name: post.whiskey_name,
+          distillery: post.whiskey_distillery,
+          region: post.whiskey_region,
+          type: post.whiskey_type,
+          rating: post.whiskey_rating,
+          photo_url: post.whiskey_photo_url,
+          flavor_tags: post.whiskey_flavor_tags || [],
+          note: post.whiskey_note,
+          drinking_location: post.whiskey_drinking_location || null,
+        },
+      };
+    });
 
     return NextResponse.json(
       { posts: enrichedPosts, hasMore: (posts || []).length === limit },
@@ -210,7 +214,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch the record (user's own, so RLS allows it)
     const { data: record, error: recordError } = await supabase
       .from("tasting_records")
       .select("id, name, distillery, region, type, rating, photo_url, flavor_tags, note, drinking_location")
@@ -226,7 +229,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Save post with whiskey snapshot data
     const { data: post, error } = await supabase
       .from("timeline_posts")
       .insert({
@@ -249,7 +251,6 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("Post create error:", error);
-      // If snapshot columns don't exist, retry without them
       if (error.code === "42703" || error.message?.includes("column")) {
         const { data: post2, error: error2 } = await supabase
           .from("timeline_posts")

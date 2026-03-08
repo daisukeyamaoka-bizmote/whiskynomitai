@@ -202,13 +202,11 @@ export default function MyPage() {
   }, []);
 
   const fetchAll = async () => {
-    const [profileRes, dashboardRes, recordsRes, prefsRes, sharesRes] = await Promise.all([
-      fetch("/api/profile").catch(() => null),
-      fetch("/api/dashboard").catch(() => null),
-      fetch("/api/records?limit=3&page=1").catch(() => null),
-      fetch("/api/preferences").catch(() => null),
-      fetch("/api/shares").catch(() => null),
-    ]);
+    // Phase 1: Profile + follow counts (fastest, needed for above-the-fold)
+    const profilePromise = fetch("/api/profile").catch(() => null);
+    const authPromise = supabase.auth.getUser();
+
+    const [profileRes, { data: { user: authUser } }] = await Promise.all([profilePromise, authPromise]);
 
     if (profileRes?.ok) {
       const p = await profileRes.json();
@@ -216,11 +214,33 @@ export default function MyPage() {
       setEditForm(p);
     }
 
+    // Start follow counts immediately (parallel with rest)
+    if (authUser) {
+      Promise.all([
+        supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("follower_id", authUser.id),
+        supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("following_id", authUser.id),
+      ]).then(([followingRes, followerRes]) => {
+        setFollowingCount(followingRes.count || 0);
+        setFollowerCount(followerRes.count || 0);
+      }).catch(() => {});
+    }
+
+    // Show profile card immediately
+    setLoading(false);
+
+    // Phase 2: Dashboard + records + preferences (non-blocking)
+    const [dashboardRes, recordsRes, prefsRes, sharesRes] = await Promise.all([
+      fetch("/api/dashboard").catch(() => null),
+      fetch("/api/records?limit=3&page=1").catch(() => null),
+      fetch("/api/preferences").catch(() => null),
+      fetch("/api/shares").catch(() => null),
+    ]);
+
     if (dashboardRes?.ok) {
       const d: DashboardData = await dashboardRes.json();
       setDashboard(d);
       const flavors = new Set(d.topFlavors.map((f) => f.name));
-      setStats({
+      const newStats: Stats = {
         total: d.total,
         avgRating: d.avgRating,
         uniqueRegions: d.regionBreakdown.length,
@@ -230,7 +250,18 @@ export default function MyPage() {
           .filter(([k]) => Number(k) >= 8)
           .reduce((sum, [, v]) => sum + Number(v), 0),
         shareCount: 0,
-      });
+      };
+      setStats(newStats);
+
+      // Phase 3: Lazy-load AI analysis (only if enough data, non-blocking)
+      if (d.total >= 2) {
+        fetch("/api/dashboard/ai").then(async (res) => {
+          if (res.ok) {
+            const ai = await res.json();
+            setDashboard((prev) => prev ? { ...prev, aiAnalysis: ai } : prev);
+          }
+        }).catch(() => {});
+      }
     }
 
     if (recordsRes?.ok) {
@@ -246,22 +277,6 @@ export default function MyPage() {
       const sd = await sharesRes.json();
       setStats((prev) => ({ ...prev, shareCount: sd.count || 0 }));
     }
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const [followingRes, followerRes] = await Promise.all([
-          supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("follower_id", user.id),
-          supabase.from("user_follows").select("id", { count: "exact", head: true }).eq("following_id", user.id),
-        ]);
-        setFollowingCount(followingRes.count || 0);
-        setFollowerCount(followerRes.count || 0);
-      }
-    } catch {
-      // ignore
-    }
-
-    setLoading(false);
   };
 
   const openFollowList = async (type: "following" | "followers") => {

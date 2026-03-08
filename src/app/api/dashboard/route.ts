@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import Anthropic from "@anthropic-ai/sdk";
-import { checkAiUsage, logAiUsage } from "@/lib/ai-usage";
 
 interface TastingRecord {
   name: string;
@@ -49,8 +47,6 @@ export async function GET() {
 
     const typedRecords = records as TastingRecord[];
 
-    // ---- Compute stats locally (no AI needed) ----
-
     // Rating distribution
     const ratingDistribution: Record<number, number> = {};
     for (let i = 1; i <= 10; i++) ratingDistribution[i] = 0;
@@ -69,16 +65,16 @@ export async function GET() {
       .map(([name, count]) => ({ name, count }));
 
     // Region breakdown
-    const regionCount: Record<string, number> = {};
+    const regionCountMap: Record<string, number> = {};
     const regionRating: Record<string, number[]> = {};
     typedRecords.forEach((r) => {
       if (r.region) {
-        regionCount[r.region] = (regionCount[r.region] || 0) + 1;
+        regionCountMap[r.region] = (regionCountMap[r.region] || 0) + 1;
         if (!regionRating[r.region]) regionRating[r.region] = [];
         regionRating[r.region].push(r.rating);
       }
     });
-    const regionBreakdown = Object.entries(regionCount)
+    const regionBreakdown = Object.entries(regionCountMap)
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({
         name,
@@ -92,16 +88,16 @@ export async function GET() {
       }));
 
     // Type breakdown
-    const typeCount: Record<string, number> = {};
+    const typeCountMap: Record<string, number> = {};
     const typeRating: Record<string, number[]> = {};
     typedRecords.forEach((r) => {
       if (r.type) {
-        typeCount[r.type] = (typeCount[r.type] || 0) + 1;
+        typeCountMap[r.type] = (typeCountMap[r.type] || 0) + 1;
         if (!typeRating[r.type]) typeRating[r.type] = [];
         typeRating[r.type].push(r.rating);
       }
     });
-    const typeBreakdown = Object.entries(typeCount)
+    const typeBreakdown = Object.entries(typeCountMap)
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({
         name,
@@ -114,7 +110,7 @@ export async function GET() {
           ) / 10,
       }));
 
-    // High-rated favorites (rating >= 7)
+    // Favorites
     const favorites = typedRecords
       .filter((r) => r.rating >= 7)
       .sort((a, b) => b.rating - a.rating)
@@ -134,10 +130,10 @@ export async function GET() {
           10
       ) / 10;
 
-    // Rating trend (monthly averages if enough data)
+    // Rating trend
     const monthlyRatings: Record<string, number[]> = {};
     typedRecords.forEach((r) => {
-      const month = r.created_at.substring(0, 7); // YYYY-MM
+      const month = r.created_at.substring(0, 7);
       if (!monthlyRatings[month]) monthlyRatings[month] = [];
       monthlyRatings[month].push(r.rating);
     });
@@ -152,59 +148,7 @@ export async function GET() {
         count: ratings.length,
       }));
 
-    // ---- AI personality analysis (only if 2+ records and AI available) ----
-    let aiAnalysis = null;
-    const aiUsage = await checkAiUsage(supabase, user.id);
-    if (typedRecords.length >= 2 && aiUsage.canUse) {
-      try {
-        const apiKey = process.env.ANTHROPIC_API_KEY;
-        if (apiKey && apiKey !== "placeholder") {
-          const anthropic = new Anthropic({ apiKey });
-
-          const summary = typedRecords.map((r) => ({
-            name: r.name,
-            type: r.type,
-            region: r.region,
-            rating: r.rating,
-            flavors: r.flavor_tags,
-          }));
-
-          const message = await anthropic.messages.create({
-            model: "claude-haiku-4-5-20251001",
-            max_tokens: 1024,
-            messages: [
-              {
-                role: "user",
-                content: `あなたはウイスキーソムリエです。以下のテイスティング履歴から、この人のウイスキーの好みを分析してください。
-
-${JSON.stringify(summary)}
-
-必ずJSON形式のみで回答してください。
-
-{
-  "personality_title": "この人のウイスキー好みを表す短いタイトル（例: 「スモーキー探究者」「甘美なハイランドファン」など、10文字以内）",
-  "personality_description": "この人の好みの傾向を2-3文で具体的に説明（高評価のウイスキーの共通点、好む味わいの方向性など）",
-  "strength": "この人の味覚の特徴や強み（1文）",
-  "next_challenge": "次に挑戦すると面白そうなウイスキーの方向性（1文、具体的な銘柄名を1つ含める）"
-}`,
-              },
-            ],
-          });
-
-          const responseText =
-            message.content[0].type === "text" ? message.content[0].text : "";
-          const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            aiAnalysis = JSON.parse(jsonMatch[0]);
-            await logAiUsage(supabase, user.id, "dashboard");
-          }
-        }
-      } catch (e) {
-        console.error("AI analysis error:", e);
-        // Continue without AI analysis
-      }
-    }
-
+    // Return stats immediately — no AI call here
     return NextResponse.json({
       total: typedRecords.length,
       avgRating,
@@ -214,7 +158,7 @@ ${JSON.stringify(summary)}
       typeBreakdown,
       favorites,
       ratingTrend,
-      aiAnalysis,
+      aiAnalysis: null,
     });
   } catch (error) {
     console.error("Dashboard error:", error);
