@@ -185,9 +185,10 @@ export default function RecordPage() {
   const handleShareToTimeline = async () => {
     if (!savedRecordId) return;
     setSharing(true);
+    setError("");
 
     try {
-      await fetch("/api/timeline", {
+      const res = await fetch("/api/timeline", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -196,9 +197,18 @@ export default function RecordPage() {
           is_public: true,
         }),
       });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "投稿に失敗しました");
+        setSharing(false);
+        return;
+      }
+
       router.push("/timeline");
     } catch {
-      router.push("/collection");
+      setError("投稿中にエラーが発生しました");
+      setSharing(false);
     }
   };
 

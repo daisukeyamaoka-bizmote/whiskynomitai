@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Heart,
   MessageCircle,
@@ -64,13 +64,7 @@ export default function TimelinePage() {
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
 
-  useEffect(() => {
-    setPage(1);
-    setPosts([]);
-    fetchPosts(1, true);
-  }, [tab]);
-
-  const fetchPosts = async (p: number, reset = false) => {
+  const fetchPosts = useCallback(async (p: number, reset = false) => {
     if (reset) setLoading(true);
     else setLoadingMore(true);
 
@@ -87,7 +81,26 @@ export default function TimelinePage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, [tab]);
+
+  // タブ切替時と初回マウント時にデータ取得
+  useEffect(() => {
+    setPage(1);
+    setPosts([]);
+    fetchPosts(1, true);
+  }, [tab, fetchPosts]);
+
+  // ページが表示された時（戻ってきた時）に再取得
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        setPage(1);
+        fetchPosts(1, true);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [fetchPosts]);
 
   const handleLoadMore = () => {
     const next = page + 1;
