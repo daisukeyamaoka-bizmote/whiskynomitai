@@ -13,6 +13,8 @@ interface Suggestion {
   flavor_tags: string[];
   reason: string;
   match_score: number;
+  rarity?: string;
+  bar_tip?: string;
 }
 
 interface TasteProfile {
@@ -238,10 +240,30 @@ export default function SuggestPage() {
               </div>
             )}
 
+            {/* Rarity & Bar Tip */}
+            {(suggestion.rarity || suggestion.bar_tip) && (
+              <div className="flex flex-wrap gap-2">
+                {suggestion.rarity && (
+                  <span className="text-xs bg-amber-900/30 text-amber-400 border border-amber-700/30 px-2 py-0.5 rounded-full">
+                    希少度 {suggestion.rarity}
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Reason */}
             <p className="text-whiskey-muted text-sm leading-relaxed">
               {suggestion.reason}
             </p>
+
+            {/* Bar Tip */}
+            {suggestion.bar_tip && (
+              <div className="bg-whiskey-gold/5 border border-whiskey-gold/15 rounded-lg p-2.5">
+                <p className="text-xs text-whiskey-gold/80">
+                  🥃 {suggestion.bar_tip}
+                </p>
+              </div>
+            )}
           </div>
         ))}
       </div>
