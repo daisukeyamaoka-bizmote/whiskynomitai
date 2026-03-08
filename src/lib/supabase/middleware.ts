@@ -55,13 +55,15 @@ export async function updateSession(request: NextRequest) {
 
   if (user && !isPublicPath && !isOnboarding && !isApiRoute) {
     try {
-      const { data: prefs } = await supabase
+      const { data: prefs, error } = await supabase
         .from("user_preferences")
         .select("onboarding_completed")
         .eq("user_id", user.id)
         .single();
 
-      if (!prefs?.onboarding_completed) {
+      // Only redirect to onboarding if we got a clear "not completed" result
+      // If there's an error (table missing, no row, etc.), let the user through
+      if (!error && prefs && prefs.onboarding_completed === false) {
         const url = request.nextUrl.clone();
         url.pathname = "/onboarding";
         return NextResponse.redirect(url);

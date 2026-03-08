@@ -109,12 +109,15 @@ export default function OnboardingPage() {
   const handleFinish = async () => {
     setFinishing(true);
     try {
-      // Ensure onboarding_completed is set before navigating
-      await fetch("/api/onboarding/complete", { method: "POST" });
-    } catch {
-      // ignore - will try to navigate anyway
+      const res = await fetch("/api/onboarding/complete", { method: "POST" });
+      if (!res.ok) {
+        console.error("Complete API failed:", res.status);
+      }
+    } catch (e) {
+      console.error("Complete API error:", e);
     }
-    router.push("/");
+    // Use hard navigation to ensure middleware re-checks the DB
+    window.location.href = "/";
   };
 
   const stepNumber = (() => {
