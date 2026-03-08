@@ -176,16 +176,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch the record (user's own, so RLS allows it)
-    const { data: record } = await supabase
+    const { data: record, error: recordError } = await supabase
       .from("tasting_records")
       .select("id, name, distillery, region, type, rating, photo_url, flavor_tags, note")
       .eq("id", record_id)
       .eq("user_id", user.id)
       .single();
 
-    if (!record) {
+    if (recordError || !record) {
+      console.error("Record fetch error:", recordError);
       return NextResponse.json(
-        { error: "記録が見つかりません" },
+        { error: recordError ? `記録の取得に失敗: ${recordError.message}` : "記録が見つかりません" },
         { status: 404 }
       );
     }
@@ -212,8 +213,30 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error("Post create error:", error);
+      // If snapshot columns don't exist, retry without them
+      if (error.code === "42703" || error.message?.includes("column")) {
+        const { data: post2, error: error2 } = await supabase
+          .from("timeline_posts")
+          .insert({
+            user_id: user.id,
+            record_id,
+            comment: comment || null,
+            is_public,
+          })
+          .select()
+          .single();
+
+        if (!error2) {
+          return NextResponse.json(post2);
+        }
+        console.error("Post create fallback error:", error2);
+        return NextResponse.json(
+          { error: `投稿に失敗しました: ${error2.message}` },
+          { status: 500 }
+        );
+      }
       return NextResponse.json(
-        { error: "投稿に失敗しました" },
+        { error: `投稿に失敗しました: ${error.message}` },
         { status: 500 }
       );
     }
