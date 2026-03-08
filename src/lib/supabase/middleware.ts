@@ -33,16 +33,17 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
+  // getSession() is fast (local JWT check), getUser() hits Supabase API every time
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
   const publicPaths = ["/login", "/signup", "/auth/callback"];
   const isPublicPath = publicPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
 
-  if (!user && !isPublicPath) {
+  if (!session && !isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -52,12 +53,11 @@ export async function updateSession(request: NextRequest) {
   const isOnboarding = request.nextUrl.pathname.startsWith("/onboarding");
   const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
 
-  if (user && !isPublicPath && !isOnboarding && !isApiRoute) {
+  if (session && !isPublicPath && !isOnboarding && !isApiRoute) {
     // Check cookie cache first to avoid DB query on every request
     const onboardingDone = request.cookies.get("onboarding_done")?.value;
 
     if (onboardingDone === "1") {
-      // Already completed, skip DB check
       return supabaseResponse;
     }
 
@@ -65,7 +65,7 @@ export async function updateSession(request: NextRequest) {
       const { data: prefs, error } = await supabase
         .from("user_preferences")
         .select("onboarding_completed")
-        .eq("user_id", user.id)
+        .eq("user_id", session.user.id)
         .single();
 
       if (!error && prefs && prefs.onboarding_completed === false) {
@@ -74,13 +74,12 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(url);
       }
 
-      // Cache the result so we don't query DB on every request
       if (!error && prefs && prefs.onboarding_completed === true) {
         supabaseResponse.cookies.set("onboarding_done", "1", {
           httpOnly: true,
           secure: true,
           sameSite: "lax",
-          maxAge: 60 * 60 * 24 * 30, // 30 days
+          maxAge: 60 * 60 * 24 * 30,
           path: "/",
         });
       }

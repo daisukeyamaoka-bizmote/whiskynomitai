@@ -55,12 +55,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
-      records: data,
-      total: count,
-      page,
-      limit,
-    });
+    return NextResponse.json(
+      { records: data, total: count, page, limit },
+      { headers: { "Cache-Control": "private, max-age=0, stale-while-revalidate=30" } }
+    );
   } catch (error) {
     console.error("Records error:", error);
     return NextResponse.json(
