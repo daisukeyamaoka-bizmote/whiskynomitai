@@ -26,8 +26,9 @@ import {
   Compass,
   Link as LinkIcon,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import WhiskyLoader from "@/components/WhiskyLoader";
-import AiShareModal from "@/components/AiShareModal";
+const AiShareModal = dynamic(() => import("@/components/AiShareModal"), { ssr: false });
 
 // --- Types ---
 interface TastingRecord {
@@ -339,7 +340,7 @@ export default function MyPage() {
   const level = useMemo(() => getLevel(xp), [xp]);
   const xpBreakdown = useMemo(() => getXpBreakdown(stats), [stats]);
   const maxRatingCount = useMemo(() => dashboard
-    ? Math.max(...Object.values(dashboard.ratingDistribution).map(Number), 1)
+    ? Math.max(...Object.values(dashboard.ratingDistribution || {}).map(Number), 1)
     : 1, [dashboard]);
   const maxFlavorCount = useMemo(() => dashboard
     ? Math.max(...(dashboard.topFlavors || []).map((f) => f.count), 1)
@@ -650,7 +651,7 @@ export default function MyPage() {
             </div>
             <div className="glass-card p-3 text-center space-y-1">
               <MapPin size={18} className="text-whiskey-gold mx-auto" />
-              <p className="text-lg font-bold text-whiskey-text">{dashboard?.regionBreakdown.length || stats.uniqueRegions}</p>
+              <p className="text-lg font-bold text-whiskey-text">{dashboard?.regionBreakdown?.length || stats.uniqueRegions}</p>
               <p className="text-xs text-whiskey-muted">産地数</p>
             </div>
           </div>
@@ -733,14 +734,14 @@ export default function MyPage() {
           )}
 
           {/* Top Flavors */}
-          {dashboard && dashboard.topFlavors.length > 0 && (
+          {dashboard && (dashboard.topFlavors || []).length > 0 && (
             <div className="glass-card p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Target size={16} className="text-whiskey-gold" />
-                <h2 className="text-sm font-bold text-whiskey-gold">好みフレーバー TOP{Math.min(dashboard.topFlavors.length, 8)}</h2>
+                <h2 className="text-sm font-bold text-whiskey-gold">好みフレーバー TOP{Math.min((dashboard.topFlavors || []).length, 8)}</h2>
               </div>
               <div className="space-y-2">
-                {dashboard.topFlavors.map((flavor, i) => (
+                {(dashboard.topFlavors || []).map((flavor, i) => (
                   <div key={flavor.name} className="flex items-center gap-2">
                     <span className="text-xs text-whiskey-gold/60 w-4">{i + 1}</span>
                     <span className="text-sm text-whiskey-text w-24 truncate">{flavor.name}</span>
@@ -761,14 +762,14 @@ export default function MyPage() {
           )}
 
           {/* Favorites */}
-          {dashboard && dashboard.favorites.length > 0 && (
+          {dashboard && (dashboard.favorites || []).length > 0 && (
             <div className="glass-card p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Award size={16} className="text-whiskey-gold" />
                 <h2 className="text-sm font-bold text-whiskey-gold">お気に入り TOP5</h2>
               </div>
               <div className="space-y-2">
-                {dashboard.favorites.map((fav, i) => (
+                {(dashboard.favorites || []).map((fav, i) => (
                   <div key={i} className="flex items-center gap-3 py-1">
                     <span className="text-lg font-bold text-whiskey-gold/40 w-6 text-center">{i + 1}</span>
                     <div className="flex-1 min-w-0">
@@ -786,14 +787,14 @@ export default function MyPage() {
           )}
 
           {/* Rating Trend */}
-          {dashboard && dashboard.ratingTrend.length > 1 && (
+          {dashboard && (dashboard.ratingTrend || []).length > 1 && (
             <div className="glass-card p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <TrendingUp size={16} className="text-whiskey-gold" />
                 <h2 className="text-sm font-bold text-whiskey-gold">評価の推移</h2>
               </div>
               <div className="flex items-end gap-1 h-24">
-                {dashboard.ratingTrend.map((item) => (
+                {(dashboard.ratingTrend || []).map((item) => (
                   <div key={item.month} className="flex-1 flex flex-col items-center gap-1">
                     <span className="text-[10px] text-whiskey-muted">{item.avgRating}</span>
                     <div className="w-full bg-gradient-to-t from-whiskey-gold/30 to-whiskey-gold/60 rounded-t" style={{ height: `${Math.round((item.avgRating / 10) * 100)}%`, minHeight: "4px" }} />
