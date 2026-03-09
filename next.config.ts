@@ -15,6 +15,9 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 3600,
   },
   compress: true,
+  experimental: {
+    optimizePackageImports: ["lucide-react"],
+  },
 };
 
 export default nextConfig;

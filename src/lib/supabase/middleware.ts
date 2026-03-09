@@ -17,11 +17,62 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Fast path: static assets and Next.js internals
+  if (pathname.startsWith("/_next/") || pathname.startsWith("/favicon") || pathname.includes(".")) {
+    return supabaseResponse;
+  }
+
   const publicPaths = ["/login", "/signup", "/auth/callback", "/share"];
   const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
 
+  // Fast path: public paths don't need auth check at all
+  if (isPublicPath) {
+    return supabaseResponse;
+  }
+
   // Check onboarding cookie BEFORE creating Supabase client (zero-cost)
   const onboardingDone = request.cookies.get("onboarding_done")?.value === "1";
+
+  // Check if auth cookie exists before creating client (fast cookie check)
+  const hasAuthCookie = request.cookies.getAll().some(c => c.name.startsWith("sb-") && c.name.endsWith("-auth-token"));
+  if (!hasAuthCookie) {
+    // No auth cookie at all - redirect to login immediately without creating Supabase client
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  // Authenticated + onboarding done + not onboarding page = fast return (no DB query)
+  const isOnboarding = pathname.startsWith("/onboarding");
+  if (onboardingDone && !isOnboarding) {
+    // Still need to create Supabase client to refresh session token
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value)
+            );
+            supabaseResponse = NextResponse.next({
+              request,
+            });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            );
+          },
+        },
+      }
+    );
+
+    // getSession() is fast (local JWT check) - just refresh token
+    await supabase.auth.getSession();
+    return supabaseResponse;
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,19 +102,12 @@ export async function updateSession(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  if (!session && !isPublicPath) {
+  if (!session) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // Fast return: onboarding already done (cookie cached) - no DB query needed
-  if (!session || isPublicPath || onboardingDone) {
-    return supabaseResponse;
-  }
-
-  // Only check onboarding for non-onboarding page routes (not API, not already onboarding)
-  const isOnboarding = pathname.startsWith("/onboarding");
   if (isOnboarding) {
     return supabaseResponse;
   }

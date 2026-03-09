@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       { posts: enrichedPosts, hasMore: (posts || []).length === limit },
-      { headers: { "Cache-Control": "private, max-age=0, stale-while-revalidate=30" } }
+      { headers: { "Cache-Control": "private, max-age=5, stale-while-revalidate=30" } }
     );
   } catch (error) {
     console.error("Timeline error:", error);

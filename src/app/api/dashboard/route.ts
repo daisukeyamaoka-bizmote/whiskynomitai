@@ -161,7 +161,7 @@ export async function GET() {
         ratingTrend,
         aiAnalysis: null,
       },
-      { headers: { "Cache-Control": "private, max-age=0, stale-while-revalidate=60" } }
+      { headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=120" } }
     );
   } catch (error) {
     console.error("Dashboard error:", error);
