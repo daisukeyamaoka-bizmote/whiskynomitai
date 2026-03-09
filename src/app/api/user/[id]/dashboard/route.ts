@@ -58,7 +58,7 @@ export async function GET(
     // Flavor frequency
     const flavorCount: Record<string, number> = {};
     typedRecords.forEach((r) =>
-      r.flavor_tags.forEach((tag) => {
+      (r.flavor_tags || []).forEach((tag) => {
         flavorCount[tag] = (flavorCount[tag] || 0) + 1;
       })
     );
@@ -169,7 +169,7 @@ export async function GET(
 
     // Level/XP calculation
     const uniqueFlavors = new Set(
-      typedRecords.flatMap((r) => r.flavor_tags)
+      typedRecords.flatMap((r) => r.flavor_tags || [])
     ).size;
     const uniqueRegions = regionBreakdown.length;
     const uniqueTypes = typeBreakdown.length;

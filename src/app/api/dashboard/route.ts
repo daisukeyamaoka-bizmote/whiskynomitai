@@ -55,7 +55,7 @@ export async function GET() {
     // Flavor frequency
     const flavorCount: Record<string, number> = {};
     typedRecords.forEach((r) =>
-      r.flavor_tags.forEach((tag) => {
+      (r.flavor_tags || []).forEach((tag) => {
         flavorCount[tag] = (flavorCount[tag] || 0) + 1;
       })
     );
