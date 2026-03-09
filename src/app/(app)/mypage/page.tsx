@@ -332,6 +332,19 @@ export default function MyPage() {
     router.refresh();
   };
 
+  // Hooks must be called before any conditional returns (React rules of hooks)
+  const displayName = profile?.display_name || profile?.full_name || "";
+  const email = profile?.email || "";
+  const xp = useMemo(() => calcXp(stats), [stats]);
+  const level = useMemo(() => getLevel(xp), [xp]);
+  const xpBreakdown = useMemo(() => getXpBreakdown(stats), [stats]);
+  const maxRatingCount = useMemo(() => dashboard
+    ? Math.max(...Object.values(dashboard.ratingDistribution).map(Number), 1)
+    : 1, [dashboard]);
+  const maxFlavorCount = useMemo(() => dashboard
+    ? Math.max(...(dashboard.topFlavors || []).map((f) => f.count), 1)
+    : 1, [dashboard]);
+
   if (loading) {
     return (
       <div className="py-4 space-y-5 animate-fadeIn">
@@ -380,18 +393,6 @@ export default function MyPage() {
       </div>
     );
   }
-
-  const displayName = profile?.display_name || profile?.full_name || "";
-  const email = profile?.email || "";
-  const xp = useMemo(() => calcXp(stats), [stats]);
-  const level = useMemo(() => getLevel(xp), [xp]);
-  const xpBreakdown = useMemo(() => getXpBreakdown(stats), [stats]);
-  const maxRatingCount = useMemo(() => dashboard
-    ? Math.max(...Object.values(dashboard.ratingDistribution).map(Number), 1)
-    : 1, [dashboard]);
-  const maxFlavorCount = useMemo(() => dashboard
-    ? Math.max(...dashboard.topFlavors.map((f) => f.count), 1)
-    : 1, [dashboard]);
 
   return (
     <div className="py-4 space-y-5 animate-fadeIn">
