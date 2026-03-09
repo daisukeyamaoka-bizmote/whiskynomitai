@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import PwaInstallBanner from "@/components/PwaInstallBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -37,8 +38,11 @@ export default function RootLayout({
     <html lang="ja">
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        {/* iOS splash screens - dark background with centered icon */}
+        <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           rel="preconnect"
@@ -52,6 +56,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <ServiceWorkerRegister />
+        <PwaInstallBanner />
         {children}
       </body>
     </html>
