@@ -5,7 +5,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-whiskey-bg relative">
       <Header />
-      <main className="max-w-[480px] mx-auto px-4 pt-16 pb-20 relative z-10">
+      <main className="max-w-[480px] mx-auto px-4 pb-20 relative z-10" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 4rem)" }}>
         {children}
       </main>
       <BottomNav />

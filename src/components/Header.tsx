@@ -39,6 +39,7 @@ export default function Header() {
     <header
       className="fixed top-0 left-0 right-0 z-50 glass-header border-b"
       style={{
+        paddingTop: "env(safe-area-inset-top, 0px)",
         transform: visible ? "translateY(0)" : "translateY(-100%)",
         transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
