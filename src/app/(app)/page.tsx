@@ -105,9 +105,12 @@ export default function TimelinePage() {
         const res = await fetch(`/api/timeline?tab=${tab}&page=${p}`);
         if (res.ok) {
           const data = await res.json();
-          const newPosts = reset ? data.posts : [...posts, ...data.posts];
-          setPosts(newPosts);
-          if (reset) postsCache.current.set(tab, data.posts);
+          if (reset) {
+            setPosts(data.posts);
+            postsCache.current.set(tab, data.posts);
+          } else {
+            setPosts((prev) => [...prev, ...data.posts]);
+          }
           setHasMore(data.hasMore);
           lastFetchRef.current = Date.now();
         }
@@ -118,13 +121,13 @@ export default function TimelinePage() {
         setLoadingMore(false);
       }
     },
-    [tab, posts]
+    [tab]
   );
 
   useEffect(() => {
     setPage(1);
     fetchPosts(1, true);
-  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tab, fetchPosts]);
 
   useEffect(() => {
     const handleVisibility = () => {

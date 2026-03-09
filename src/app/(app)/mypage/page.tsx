@@ -218,23 +218,25 @@ export default function MyPage() {
       if (!res.ok) return;
       const data = await res.json();
 
-      setProfile(data.profile);
-      setEditForm(data.profile);
-      setFollowingCount(data.followingCount);
-      setFollowerCount(data.followerCount);
+      if (data.profile) {
+        setProfile(data.profile);
+        setEditForm(data.profile);
+      }
+      setFollowingCount(data.followingCount || 0);
+      setFollowerCount(data.followerCount || 0);
       setRecentRecords(data.recentRecords || []);
-      setPreferences(data.preferences);
+      setPreferences(data.preferences || null);
 
-      if (data.dashboard) {
+      if (data.dashboard && data.dashboard.topFlavors) {
         setDashboard(data.dashboard);
-        const flavors = new Set(data.dashboard.topFlavors.map((f: FlavorStat) => f.name));
+        const flavors = new Set((data.dashboard.topFlavors || []).map((f: FlavorStat) => f.name));
         setStats({
-          total: data.dashboard.total,
-          avgRating: data.dashboard.avgRating,
-          uniqueRegions: data.dashboard.regionBreakdown.length,
-          uniqueTypes: data.dashboard.typeBreakdown.length,
+          total: data.dashboard.total || 0,
+          avgRating: data.dashboard.avgRating || 0,
+          uniqueRegions: (data.dashboard.regionBreakdown || []).length,
+          uniqueTypes: (data.dashboard.typeBreakdown || []).length,
           uniqueFlavors: flavors.size,
-          highRatedCount: Object.entries(data.dashboard.ratingDistribution)
+          highRatedCount: Object.entries(data.dashboard.ratingDistribution || {})
             .filter(([k]) => Number(k) >= 8)
             .reduce((sum, [, v]) => sum + Number(v), 0),
           shareCount: data.shareCount || 0,
@@ -653,22 +655,22 @@ export default function MyPage() {
           </div>
 
           {/* Taste Profile */}
-          {preferences && preferences.total_tastings >= 2 && (preferences.top_flavors.length > 0 || preferences.top_regions.length > 0) && (
+          {preferences && preferences.total_tastings >= 2 && ((preferences.top_flavors || []).length > 0 || (preferences.top_regions || []).length > 0) && (
             <div className="glass-card p-4 space-y-3">
               <h2 className="text-sm font-bold text-whiskey-gold">あなたの好み</h2>
-              {preferences.top_flavors.length > 0 && (
+              {(preferences.top_flavors || []).length > 0 && (
                 <div>
                   <p className="text-xs text-whiskey-muted mb-1.5">フレーバー</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {preferences.top_flavors.map((f) => (<span key={f} className="glass-tag px-2 py-0.5 text-whiskey-gold text-xs">{f}</span>))}
+                    {(preferences.top_flavors || []).map((f) => (<span key={f} className="glass-tag px-2 py-0.5 text-whiskey-gold text-xs">{f}</span>))}
                   </div>
                 </div>
               )}
-              {preferences.top_regions.length > 0 && (
+              {(preferences.top_regions || []).length > 0 && (
                 <div>
                   <p className="text-xs text-whiskey-muted mb-1.5">産地</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {preferences.top_regions.map((r) => (<span key={r} className="glass-tag px-2 py-0.5 text-whiskey-gold text-xs">{r}</span>))}
+                    {(preferences.top_regions || []).map((r) => (<span key={r} className="glass-tag px-2 py-0.5 text-whiskey-gold text-xs">{r}</span>))}
                   </div>
                 </div>
               )}
