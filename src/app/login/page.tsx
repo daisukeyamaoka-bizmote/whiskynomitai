@@ -1,18 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+    if (errorParam && errorParam !== "auth_failed") {
+      setError(`認証エラー: ${decodeURIComponent(errorParam)}`);
+    } else if (errorParam === "auth_failed") {
+      setError("認証に失敗しました。もう一度お試しください。");
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +35,13 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError("メールアドレスまたはパスワードが正しくありません");
+      if (error.message.includes("Invalid login credentials")) {
+        setError("メールアドレスまたはパスワードが正しくありません");
+      } else if (error.message.includes("Email not confirmed")) {
+        setError("メールアドレスが未確認です。確認メールのリンクをクリックしてください。");
+      } else {
+        setError(`ログインエラー: ${error.message}`);
+      }
       setLoading(false);
       return;
     }
@@ -38,7 +54,7 @@ export default function LoginPage() {
     setSocialLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "twitter",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
@@ -46,7 +62,10 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError("問題が発生しました。しばらくしてからやりなおしてください。");
+      setError(`Xログインエラー: ${error.message}`);
+      setSocialLoading(false);
+    } else if (!data?.url) {
+      setError("Xログインの接続先URLが取得できませんでした。");
       setSocialLoading(false);
     }
   };
@@ -145,5 +164,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }

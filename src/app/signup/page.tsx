@@ -19,7 +19,7 @@ export default function SignupPage() {
     setSocialLoading(true);
     setError("");
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "twitter",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
@@ -27,7 +27,10 @@ export default function SignupPage() {
     });
 
     if (error) {
-      setError("問題が発生しました。しばらくしてからやりなおしてください。");
+      setError(`X連携エラー: ${error.message}`);
+      setSocialLoading(false);
+    } else if (!data?.url) {
+      setError("X連携の接続先URLが取得できませんでした。");
       setSocialLoading(false);
     }
   };
